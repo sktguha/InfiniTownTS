@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CameraController } from './CameraController';
 import { Renderer } from './Renderer';
 import type { IObject } from '../interfaces/IObject';
+import { CityLoader } from './CityLoader';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -55,6 +56,10 @@ export class SceneManager {
         
         // 添加窗口大小调整监听
         window.addEventListener('resize', () => this.onWindowResize(container));
+
+        // 加载City:
+        const cityLoader = new CityLoader(this.scene);
+        cityLoader.loadClusters();
         
         // 添加鼠标移动监听（用于物体拾取）
         /*
