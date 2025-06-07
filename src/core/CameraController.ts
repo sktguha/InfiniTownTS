@@ -1,0 +1,35 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+export class CameraController {
+    public camera: THREE.PerspectiveCamera;
+    public controls: OrbitControls;
+    //private container : HTMLElement;
+
+    constructor(container: HTMLElement) {
+        //this.container = container;
+        
+        // 创建相机
+        this.camera = new THREE.PerspectiveCamera(
+            75, 
+            container.clientWidth / container.clientHeight, 
+            0.1, 
+            1000
+        );
+        this.camera.position.set(0, 5, 10);
+        
+        // 创建轨道控制器
+        this.controls = new OrbitControls(this.camera, container);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+    }
+    
+    public update(): void {
+        this.controls.update();
+    }
+    
+    public onWindowResize(container: HTMLElement): void {
+        this.camera.aspect = container.clientWidth / container.clientHeight;
+        this.camera.updateProjectionMatrix();
+    }
+}
