@@ -2,10 +2,10 @@ import * as THREE from 'three';
 
 export class Renderer {
     public renderer: THREE.WebGLRenderer;
-    private container: HTMLElement;
+    //private container: HTMLElement;
     
     constructor(container: HTMLElement) {
-        this.container = container;
+        //this.container = container;
         
         // 创建WebGL渲染器
         this.renderer = new THREE.WebGLRenderer({ 
@@ -20,7 +20,7 @@ export class Renderer {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 限制最大像素比
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        //this.renderer.outputEncoding = THREE.sRGBEncoding;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 0.8;
         

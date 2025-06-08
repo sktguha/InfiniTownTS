@@ -3,6 +3,8 @@ import { CameraController } from './CameraController';
 import { Renderer } from './Renderer';
 import type { IObject } from '../interfaces/IObject';
 import { CityLoader } from './CityLoader';
+import { MiscFunc } from '../utils/MiscFunc';
+import { GVar } from '../utils/GVar';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -17,7 +19,8 @@ export class SceneManager {
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.FogExp2(0x0a0a1a, 0.02);
+        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity( 280 ) );
+        this.scene.background = new THREE.Color( GVar.bgColor );
         
         // 创建相机控制器
         this.cameraController = new CameraController(container);
