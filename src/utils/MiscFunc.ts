@@ -12,4 +12,23 @@ export class MiscFunc{
     public static getDensity(d : number, threshold : number = 0.01) {
         return Math.sqrt(-Math.log(threshold)) / d;
     }
+
+    /**
+     * 定义一个异步函数，用于获取 JSON 数据
+     * @param filePath 
+     * @returns 
+     */
+    public static async fetchJsonData(filePath: string): Promise<any> {
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) {
+                throw new Error(`Network response was not ok`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching JSON data:', error);
+            return null;
+        }
+    }
+
 }

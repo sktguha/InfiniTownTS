@@ -5,6 +5,9 @@ import type { IObject } from '../interfaces/IObject';
 import { CityLoader } from './CityLoader';
 import { MiscFunc } from '../utils/MiscFunc';
 import { GVar } from '../utils/GVar';
+import { AppScene } from './AppScene';
+import { BinLoader } from '../loader/BinLoader';
+import { BlockLoaded } from '../loader/BlockLoader';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -16,22 +19,23 @@ export class SceneManager {
     private mouse: THREE.Vector2;
 
     constructor(container: HTMLElement) {
+
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity( 280 ) );
-        this.scene.background = new THREE.Color( GVar.bgColor );
-        
+        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity(280));
+        this.scene.background = new THREE.Color(GVar.bgColor);
+
         // 创建相机控制器
         this.cameraController = new CameraController(container);
-        
+
         // 创建渲染器
         this.renderer = new Renderer(container);
-        
+
         // 添加环境光
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);
-        
+
         // 添加方向光
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(5, 10, 7);
@@ -39,31 +43,46 @@ export class SceneManager {
         directionalLight.shadow.mapSize.width = 2048;
         directionalLight.shadow.mapSize.height = 2048;
         this.scene.add(directionalLight);
-        
+
         // 添加坐标轴
         const axesHelper = new THREE.AxesHelper(5);
         this.scene.add(axesHelper);
-        
+
         // 添加网格
         const gridHelper = new THREE.GridHelper(20, 20);
         (gridHelper.material as THREE.Material).opacity = 0.2;
         (gridHelper.material as THREE.Material).transparent = true;
         this.scene.add(gridHelper);
-        
+
         // 初始化时钟
         this.clock = new THREE.Clock();
-        
+
         // 初始化射线投射器（用于后续交互）
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
-        
+
         // 添加窗口大小调整监听
         window.addEventListener('resize', () => this.onWindowResize(container));
 
         // 加载City:
-        const cityLoader = new CityLoader(this.scene);
-        cityLoader.loadClusters();
-        
+        // const cityLoader = new CityLoader(this.scene);
+        // cityLoader.loadClusters();
+        let asce: AppScene = new AppScene();
+        asce.initChunks();
+        // 
+        /* 函数测试，基本OK:
+        asce.forEachChunk( ( chunk : THREE.Object3D,cx : number,cz : number ) : void=>{
+            console.log( "当前正在输出:" + cx + "," + cz);
+        });*/
+        BinLoader.loadBin("./assets/scenes/data/main.bin", (data: ArrayBuffer) => {
+            let bl: BlockLoaded = new BlockLoaded( data );
+            bl.loadBlock("./assets/scenes/main.json", () => {
+                debugger;
+                // WORK START: 下一步需要创建Chunk数据了:
+            });
+            debugger;
+        });
+
         // 添加鼠标移动监听（用于物体拾取）
         /*
         renderer.renderer.domElement.addEventListener('mousemove', (event) => {
@@ -71,12 +90,12 @@ export class SceneManager {
             this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         });*/
     }
-    
+
     public addObject(object: IObject): void {
         this.objects.push(object);
         this.scene.add(object.mesh);
     }
-    
+
     public removeObject(object: IObject): void {
         const index = this.objects.indexOf(object);
         if (index !== -1) {
@@ -84,7 +103,7 @@ export class SceneManager {
             this.objects.splice(index, 1);
         }
     }
-    
+
     public removeAllObjects(): void {
         this.objects.forEach(obj => {
             this.scene.remove(obj.mesh);
@@ -92,43 +111,43 @@ export class SceneManager {
         });
         this.objects = [];
     }
-    
+
     public update(): void {
         const delta = this.clock.getDelta();
-        
+
         // 更新所有对象
         this.objects.forEach(obj => {
             obj.update(delta);
         });
-        
+
         // 更新相机控制器
         this.cameraController.update();
-        
+
         // 更新射线投射器
         this.raycaster.setFromCamera(this.mouse, this.cameraController.camera);
-        
+
         // 检测鼠标悬停的物体
         /*
         const intersects = this.raycaster.intersectObjects(
             this.objects.map(obj => obj.mesh)
         );*/
-        
+
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);
     }
-    
+
     private onWindowResize(container: HTMLElement): void {
         this.cameraController.onWindowResize(container);
         this.renderer.onWindowResize(container);
     }
-    
+
     public dispose(): void {
         this.removeAllObjects();
         this.renderer.dispose();
-        
+
         // 移除事件监听器
         // ATTENTION TO FIX:
         //window.removeEventListener('resize', this.onWindowResize);
-        this.renderer.renderer.domElement.removeEventListener('mousemove', () => {});
+        this.renderer.renderer.domElement.removeEventListener('mousemove', () => { });
     }
 }
