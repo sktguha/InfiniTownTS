@@ -13,6 +13,10 @@ export class MiscFunc{
         return Math.sqrt(-Math.log(threshold)) / d;
     }
 
+    public static random() : number{
+        return Math.random();
+    }
+
     /**
      * 定义一个异步函数，用于获取 JSON 数据
      * @param filePath 

@@ -8,6 +8,7 @@ import { GVar } from '../utils/GVar';
 import { AppScene } from './AppScene';
 import { BinLoader } from '../loader/BinLoader';
 import { BlockLoaded } from '../loader/BlockLoader';
+import { CityChunkTbl } from './CityChunkTbl';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -17,6 +18,14 @@ export class SceneManager {
     private clock: THREE.Clock;
     private raycaster: THREE.Raycaster;
     private mouse: THREE.Vector2;
+
+    //
+    protected cityChkTbl: CityChunkTbl | null = null;
+    //
+    protected chunkScene: AppScene | null = null;
+
+    //
+    protected gridCoords: THREE.Vector2 = new THREE.Vector2(0, 0);
 
     constructor(container: HTMLElement) {
 
@@ -75,12 +84,44 @@ export class SceneManager {
             console.log( "当前正在输出:" + cx + "," + cz);
         });*/
         BinLoader.loadBin("./assets/scenes/data/main.bin", (data: ArrayBuffer) => {
-            let bl: BlockLoaded = new BlockLoaded( data );
-            bl.loadBlock("./assets/scenes/main.json", () => {
-                debugger;
+            let bl: BlockLoaded = new BlockLoaded(data);
+            bl.loadBlock("./assets/scenes/main.json", (obj: any) => {
+
+                if (!obj) return;
                 // WORK START: 下一步需要创建Chunk数据了:
+                let arrBlocks: Array<any> = obj.getObjectByName("blocks").children;
+                let arrLanes: Array<any> = obj.getObjectByName("lanes").children;
+                let arrIntersections: Array<any> = obj.getObjectByName("intersections").children;
+                let arrCars: Array<any> = obj.getObjectByName("cars").children;
+                let arrClouds: Array<any> = obj.getObjectByName("clouds").children;
+
+                let lenarr: Array<number> = [arrBlocks.length, arrLanes.length, arrIntersections.length, arrCars.length, arrClouds.length];
+                console.log("The lenth is:" + JSON.stringify(lenarr));
+
+                this.cityChkTbl = new CityChunkTbl(arrBlocks, arrLanes, arrIntersections, arrCars, arrClouds);
+                this.chunkScene = new AppScene();
+                this.chunkScene.initChunks();
+                this.scene.add(this.chunkScene);
+
+                // 
+                // 第一次刷新测试效果：
+                //this.refreshChunkScene();
+                setTimeout(() => {
+                    let images: any = obj.userData["images"];
+                    let arrtex: any = obj.userData["textures"];
+                                        
+                    const geometry = new THREE.BoxGeometry(2, 2, 2);
+                    const material = new THREE.MeshStandardMaterial({ map: arrtex['0E12E1AB-1D22-4642-BFB5-BC955808BB55'] });
+                    const cube = new THREE.Mesh(geometry, material);
+                    this.scene.add(cube);
+
+                    let tmesh : any = arrBlocks[0];
+                    tmesh.position.set(0, 0, 0);
+                    this.scene.add(tmesh);
+
+                }, 1000);
             });
-            debugger;
+
         });
 
         // 添加鼠标移动监听（用于物体拾取）
@@ -89,6 +130,24 @@ export class SceneManager {
             this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         });*/
+    }
+
+    // 
+    // 最核心的场景可视化函数：检测需要删除和重新安装的chunk数据，第一次初始化的时候，
+    // remove的空，但会add上去一个新的结点,需要确认 v 是如何获取的，results
+    protected refreshChunkScene(): void {
+        let $this = this;
+        this.chunkScene!.forEachChunk(function (results: any, xOffset, yOffset) {
+            if (xOffset != 0 && yOffset != 0)
+                return;
+
+            var xcor = $this.gridCoords.x + xOffset;
+            var ycor = $this.gridCoords.y + yOffset;
+            var v = $this.cityChkTbl!.getChunkData(xcor, ycor);
+            if (!v) return;
+            results.remove(results.getObjectByName("chunk"));
+            results.add(v.node);
+        });
     }
 
     public addObject(object: IObject): void {

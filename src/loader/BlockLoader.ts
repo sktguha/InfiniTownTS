@@ -8,6 +8,7 @@ export class BlockLoaded {
 
     protected geometryBuffer: ArrayBuffer = new ArrayBuffer();
     protected texturePath: string = './assets/main/';
+    protected objMainJson: any = null;
 
     constructor(buf: ArrayBuffer) {
         this.geometryBuffer = buf;
@@ -23,9 +24,25 @@ export class BlockLoaded {
             if (!jsond) return;
 
             // 开启对应的数据解晰流程:
-            this.parseJsonData(jsond);
+            this.parseJsonData(jsond, ( parseObj : any ) => {
+                
+                this.objMainJson = parseObj;
+                console.log("所有的几何体加载完成...");
+                if (cb)
+                    cb(this.objMainJson);
 
-            cb();
+                // TEST CODE TO DELETE:
+                let obj: any = this.objMainJson;
+                let arrBlocks: Array<any> = obj.getObjectByName("blocks").children;
+                let arrLanes: Array<any> = obj.getObjectByName("lanes").children;
+                let arrInseections: Array<any> = obj.getObjectByName("intersections").children;
+                let arrCars: Array<any> = obj.getObjectByName("cars").children;
+                let arrClouds: Array<any> = obj.getObjectByName("clouds").children;
+
+                let lenarr: Array<number> = [arrBlocks.length, arrLanes.length, arrInseections.length, arrCars.length, arrClouds.length];
+                console.log("The lenth is:" + JSON.stringify(lenarr));
+
+            });
         });
     }
 
@@ -35,7 +52,7 @@ export class BlockLoaded {
      * 解析main.json数据:
      * @param jsond 
      */
-    protected parseJsonData(jsond: any): void {
+    protected parseJsonData(jsond: any, onLoad: any): void {
         let geometries: any = null;
         let images: any = null;
         let textures: any = null;
@@ -47,24 +64,31 @@ export class BlockLoaded {
         if (jsond.images) {
             images = this.parseImages(jsond.images, () => {
                 console.log("所有的纹理加载完成..");
+
+                if (jsond.textures) {
+                    textures = this.parseTextures(jsond.textures, images);
+                }
+                if (jsond.materials) {
+                    materials = this.parseMaterials(jsond.materials, textures);
+                }
+
+                // 处理object的解析.
+                let object: any = this.parseObject(jsond.object, geometries, materials);
+                
+                // 记录临时变量,Debug use:
+                object.userData['images'] = images;
+                object.userData['textures'] = textures;
+
+                if (jsond.animations)
+                    object.animations = this.parseAnimations(jsond.animations);
+                if (jsond.cameras)
+                    this.parseCameras(object, jsond.cameras);
+
+                // 完成回调：
+                if (onLoad)
+                    onLoad( object );
             });
         }
-        if (jsond.textures) {
-            textures = this.parseTextures(jsond.textures, images);
-        }
-        if (jsond.materials) {
-            materials = this.parseMaterials(jsond.materials, textures);
-        }
-
-        // 处理object的解析.
-        let object: any = this.parseObject(jsond.object, geometries, materials);
-
-        if( jsond.animations )
-            object.animations = this.parseAnimations(jsond.animations); 
-        if (jsond.cameras)
-            this.parseCameras(object, jsond.cameras);
-
-        return object;
     }
 
     /**
@@ -75,7 +99,7 @@ export class BlockLoaded {
     protected parseAnimations(jsonani: any): any {
 
         var t_chksum = [];
-        for ( let i : number = 0; i < jsonani.length; i++) {
+        for (let i: number = 0; i < jsonani.length; i++) {
             var r = THREE.AnimationClip.parse(jsonani[i]);
             t_chksum.push(r);
         }
@@ -223,7 +247,7 @@ export class BlockLoaded {
 
             default:
                 object = new THREE.Object3D();
-                console.warn(`ObjectLoader: 未知的对象类型 "${data.type}"`);
+                //console.warn(`ObjectLoader: 未知的对象类型 "${data.type}"`);
         }
 
         // 设置公共属性
@@ -380,17 +404,19 @@ export class BlockLoaded {
                     if (!images[data.image]) {
                         console.warn("THREE.ObjectLoader: Undefined image", data.image);
                     }
-                    texture = new THREE.Texture(images[data.image]);
+                    texture = new THREE.Texture(images[data.image].image);
                 }
 
                 // Set common texture properties
                 texture.needsUpdate = true;
                 texture.uuid = data.uuid;
                 if (data.name) texture.name = data.name;
+                
                 if (data.mapping)
                     texture.mapping = this.parseConstant(data.mapping) as any;
                 if (data.offset) texture.offset.fromArray(data.offset);
                 if (data.repeat) texture.repeat.fromArray(data.repeat);
+                
                 if (data.wrap) {
                     texture.wrapS = this.parseConstant(data.wrap[0]) as any;
                     texture.wrapT = this.parseConstant(data.wrap[1]) as any;
