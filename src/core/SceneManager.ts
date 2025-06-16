@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { CameraController } from './CameraController';
 import { Renderer } from './Renderer';
 import type { IObject } from '../interfaces/IObject';
 import { CityLoader } from './CityLoader';
@@ -9,6 +8,8 @@ import { AppScene } from './AppScene';
 import { BinLoader } from '../loader/BinLoader';
 import { BlockLoaded } from '../loader/BlockLoader';
 import { CityChunkTbl } from './CityChunkTbl';
+import { CameraController } from '../constrol/CameraController';
+import { InputMgr } from '../constrol/InputMgr';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -19,6 +20,7 @@ export class SceneManager {
     private raycaster: THREE.Raycaster;
     private mouse: THREE.Vector2;
 
+    protected inputMgr : InputMgr = new InputMgr();
     //
     protected cityChkTbl: CityChunkTbl | null = null;
     //
@@ -73,22 +75,19 @@ export class SceneManager {
         // 添加窗口大小调整监听
         window.addEventListener('resize', () => this.onWindowResize(container));
 
+
         // 加载City:
         // const cityLoader = new CityLoader(this.scene);
         // cityLoader.loadClusters();
         let asce: AppScene = new AppScene();
         asce.initChunks();
-        // 
-        /* 函数测试，基本OK:
-        asce.forEachChunk( ( chunk : THREE.Object3D,cx : number,cz : number ) : void=>{
-            console.log( "当前正在输出:" + cx + "," + cz);
-        });*/
+
         BinLoader.loadBin("./assets/scenes/data/main.bin", (data: ArrayBuffer) => {
             let bl: BlockLoaded = new BlockLoaded(data);
             bl.loadBlock("./assets/scenes/main.json", (obj: any) => {
 
                 if (!obj) return;
-                // WORK START: 下一步需要创建Chunk数据了:
+                // 下一步需要创建Chunk数据了:
                 let arrBlocks: Array<any> = obj.getObjectByName("blocks").children;
                 let arrLanes: Array<any> = obj.getObjectByName("lanes").children;
                 let arrIntersections: Array<any> = obj.getObjectByName("intersections").children;
@@ -105,8 +104,9 @@ export class SceneManager {
 
                 // 
                 // 第一次刷新测试效果：
-                //this.refreshChunkScene();
+                
                 setTimeout(() => {
+                    /*
                     let images: any = obj.userData["images"];
                     let arrtex: any = obj.userData["textures"];
                                         
@@ -117,8 +117,9 @@ export class SceneManager {
 
                     let tmesh : any = arrBlocks[0];
                     tmesh.position.set(0, 0, 0);
-                    this.scene.add(tmesh);
+                    this.scene.add(tmesh);*/
 
+                    this.refreshChunkScene();
                 }, 1000);
             });
 
@@ -137,9 +138,10 @@ export class SceneManager {
     // remove的空，但会add上去一个新的结点,需要确认 v 是如何获取的，results
     protected refreshChunkScene(): void {
         let $this = this;
-        this.chunkScene!.forEachChunk(function (results: any, xOffset, yOffset) {
-            if (xOffset != 0 && yOffset != 0)
-                return;
+        this.chunkScene!.forEachChunk(function (results: any, xOffset : number, yOffset : number ) {
+            // 只显示0,0处的Chunk.
+            //if (xOffset != 0 && yOffset != 0)
+            //    return;
 
             var xcor = $this.gridCoords.x + xOffset;
             var ycor = $this.gridCoords.y + yOffset;

@@ -22,6 +22,12 @@ export class CameraController {
         this.controls = new OrbitControls(this.camera, container);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
+       // 禁用所有移动相关的功能
+        this.controls.enablePan = false;      // 禁用平移（鼠标右键拖拽）
+        this.controls.enableZoom = false;      // 禁用缩放（鼠标滚轮）
+        this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
+        
+
     }
     
     public update(): void {

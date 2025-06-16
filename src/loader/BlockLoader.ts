@@ -319,8 +319,13 @@ export class BlockLoaded {
             loader.setTextures(textures);
             var jsonLength = jsdata.length;
             for (let i: number = 0; i < jsonLength; i++) {
+                // 生成Pbr材质:
                 var material = loader.parse(jsdata[i]);
-                materials[material.uuid] = material;
+
+                // 
+                // 生成一个基本Mat用于测试效果:ATTENTION TO OPP:
+                let tmat : THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({ map: textures[jsdata[i].map] });
+                materials[material.uuid] = tmat;
             }
         }
         return materials;
