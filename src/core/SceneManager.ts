@@ -10,6 +10,7 @@ import { BlockLoaded } from '../loader/BlockLoader';
 import { CityChunkTbl } from './CityChunkTbl';
 import { CameraController } from '../constrol/CameraController';
 import { InputMgr } from '../constrol/InputMgr';
+import { SceneMoveController } from '../constrol/SceneMoveController';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -21,6 +22,7 @@ export class SceneManager {
     private mouse: THREE.Vector2;
 
     protected inputMgr : InputMgr = new InputMgr();
+    protected smController : SceneMoveController| null = null;
     //
     protected cityChkTbl: CityChunkTbl | null = null;
     //
@@ -101,6 +103,10 @@ export class SceneManager {
                 this.chunkScene = new AppScene();
                 this.chunkScene.initChunks();
                 this.scene.add(this.chunkScene);
+
+                // 
+                // 处理smController:
+                this.smController = new SceneMoveController( this.inputMgr, this.chunkScene, this.cameraController );
 
                 // 
                 // 第一次刷新测试效果：
