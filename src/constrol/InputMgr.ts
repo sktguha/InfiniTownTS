@@ -61,5 +61,9 @@ export class InputMgr {
             };
             this.trigger("enddrag", e);
         });
+
+        window.addEventListener( "mousewheel", (value: any) => {
+            this.trigger( "mousewheel", value );
+        });
     }
 }

@@ -31,12 +31,15 @@ export class SceneManager {
     //
     protected gridCoords: THREE.Vector2 = new THREE.Vector2(0, 0);
 
+    // 是否初始化:
+    protected bInited : boolean = false;
+
     constructor(container: HTMLElement) {
 
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity(280));
+        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity(800));
         this.scene.background = new THREE.Color(GVar.bgColor);
 
         // 创建相机控制器
@@ -126,6 +129,15 @@ export class SceneManager {
                     this.scene.add(tmesh);*/
 
                     this.refreshChunkScene();
+                    this.cameraController.setCameraHeight(200);
+
+                    this.bInited = true;
+
+                    this.inputMgr.on("mousewheel", (value:any) =>{
+                        //this.cameraController.(value.deltaY);
+                        this.cameraController.updateHeight( value.deltaY*.1 );
+                    });
+
                 }, 1000);
             });
 
@@ -189,6 +201,11 @@ export class SceneManager {
 
         // 更新相机控制器
         this.cameraController.update();
+
+        //! SceneMoveController:
+        if( this.bInited )
+            this.smController?.update();
+        
 
         // 更新射线投射器
         this.raycaster.setFromCamera(this.mouse, this.cameraController.camera);
