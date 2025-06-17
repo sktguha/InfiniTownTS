@@ -11,6 +11,7 @@ import { CityChunkTbl } from './CityChunkTbl';
 import { CameraController } from '../constrol/CameraController';
 import { InputMgr } from '../constrol/InputMgr';
 import { SceneMoveController } from '../constrol/SceneMoveController';
+import { EventMgr } from '../utils/EventMgr';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -129,6 +130,11 @@ export class SceneManager {
                     this.scene.add(tmesh);*/
 
                     this.refreshChunkScene();
+                    EventMgr.getins().on( "chunkmove",( xoff : number,yoff:number )=>{
+                        this.gridCoords.x += xoff;
+                        this.gridCoords.y += yoff;
+                        this.refreshChunkScene();
+                    });
                     this.cameraController.setCameraHeight(200);
 
                     this.bInited = true;

@@ -57,7 +57,7 @@ export class GVar {
     public static CHUNK_COUNT: number = 9;
     public static CHUNK_SIZE: number = 60;
     public static CAMERA_ANGLE: number = .5;
-    public static PAN_SPEED: number = this.isMobile() ? 0.4 : 0.1;
+    public static PAN_SPEED: number = this.isMobile() ? 1.0 : 0.25;//0.4 : 0.1;
     public static FOG_NEAR: number = 225;
     public static FOG_FAR: number = 325;
     public static FOG_COLOR: number = 10676479;

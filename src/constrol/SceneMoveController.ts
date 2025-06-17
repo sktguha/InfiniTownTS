@@ -64,14 +64,17 @@ export class SceneMoveController {
 
 
     public raycast(): void {
-        this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
+        //this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
+        this._raycaster.set( this._camera!.camera.position.clone(), new THREE.Vector3( 0,-1,0 ) );
         var intersectors = this._raycaster.intersectObjects(this._scene!.getPickables());
         if (intersectors.length > 0) {
             let insectObj = intersectors[0].object;
-            this._sceneOffset.x += (insectObj as any).userData["centeredX"] * GVar.CHUNK_SIZE;
-            this._sceneOffset.z += (insectObj as any).userData["centeredY"] * GVar.CHUNK_SIZE;
-            if (!(0 === (insectObj as any).centeredX && 0 === (insectObj as any).centeredY)) {
-                EventMgr.getins().trigger("move", (insectObj as any).centeredX, (insectObj as any).centeredY);
+            let cx : number = (insectObj as any).userData["centeredX"];
+            let cy : number = (insectObj as any).userData["centeredY"];
+            this._sceneOffset.x += cx * GVar.CHUNK_SIZE;
+            this._sceneOffset.z += cy * GVar.CHUNK_SIZE;
+            if (!(0 === cx && 0 === cy)) {
+                EventMgr.getins().trigger("chunkmove", cx,cy );
             }
         }
     }
@@ -92,7 +95,7 @@ export class SceneMoveController {
         // 使用线性插值（lerp）技术，使 point 值以每帧 5% 的步幅平滑趋向 _worldOffset。
         // 这意味着场景不会立即跳到新位置，而是逐渐移动，使移动过程更自然流畅。这种平滑效果对用户体验至关重要。
         // 因为有offset的实际数据，所以最终还是会到达目标位置的
-        point.lerp(this._worldOffset, .05);
+        point.lerp(this._worldOffset, .25);
 
         // 
         // WORK START: 从这里开始，处理场景内的位置偏移量：
