@@ -12,6 +12,7 @@ import { CameraController } from '../constrol/CameraController';
 import { InputMgr } from '../constrol/InputMgr';
 import { SceneMoveController } from '../constrol/SceneMoveController';
 import { EventMgr } from '../utils/EventMgr';
+import { LightProbeLoader } from '../loader/LightProbeLoader';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -22,44 +23,48 @@ export class SceneManager {
     private raycaster: THREE.Raycaster;
     private mouse: THREE.Vector2;
 
-    protected inputMgr : InputMgr = new InputMgr();
-    protected smController : SceneMoveController| null = null;
     //
+    //! 输出与相机控制类，与ChunkScene关联，从而场景可以无限循环：
+    protected inputMgr: InputMgr = new InputMgr();
+    protected smController: SceneMoveController | null = null;
+    // ChunkInstance核心数据类:
     protected cityChkTbl: CityChunkTbl | null = null;
-    //
+    // ChunkScene场景核心组织类：
     protected chunkScene: AppScene | null = null;
 
-    //
+    // 
+    // 网格坐标,无限循环场景的核心算法类：
     protected gridCoords: THREE.Vector2 = new THREE.Vector2(0, 0);
 
+    //! Environment Llighting:
+    protected envLightProbe: LightProbeLoader = LightProbeLoader.getins();
+    protected dirLight: THREE.DirectionalLight | null = null;
+
     // 是否初始化:
-    protected bInited : boolean = false;
+    protected bInited: boolean = false;
 
     constructor(container: HTMLElement) {
 
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.FogExp2(GVar.bgColor, MiscFunc.getDensity(800));
-        this.scene.background = new THREE.Color(GVar.bgColor);
+        this.scene.fog = new THREE.FogExp2(GVar.FOG_COLOR, MiscFunc.getDensity(800));
+        this.scene.background = new THREE.Color(GVar.FOG_COLOR);
 
         // 创建相机控制器
         this.cameraController = new CameraController(container);
 
+        // 初始化lightProbe:
+        this.envLightProbe.initLightProbe("./assets/environments/envProbe/irradiance.json");
+
         // 创建渲染器
         this.renderer = new Renderer(container);
 
-        // 添加环境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambientLight);
+        this.renderer.renderer.setClearColor(GVar.FOG_COLOR);
 
-        // 添加方向光
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 10, 7);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        this.scene.add(directionalLight);
+        // 添加环境光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+        this.scene.add(ambientLight);
 
         // 添加坐标轴
         const axesHelper = new THREE.AxesHelper(5);
@@ -108,13 +113,17 @@ export class SceneManager {
                 this.chunkScene.initChunks();
                 this.scene.add(this.chunkScene);
 
-                // 
-                // 处理smController:
-                this.smController = new SceneMoveController( this.inputMgr, this.chunkScene, this.cameraController );
+                // 初始化方向光：
+                this.dirLight = this.renderer.initDirLight();
+                this._resizeShadowMapFrustum(window.innerWidth, window.innerHeight);
+                this.chunkScene.add(this.dirLight);
+                this.chunkScene.add(this.dirLight.target);
 
                 // 
-                // 第一次刷新测试效果：
-                
+                // 处理smController:
+                this.smController = new SceneMoveController(this.inputMgr, this.chunkScene, this.cameraController);
+
+                // 
                 setTimeout(() => {
                     /*
                     let images: any = obj.userData["images"];
@@ -129,8 +138,10 @@ export class SceneManager {
                     tmesh.position.set(0, 0, 0);
                     this.scene.add(tmesh);*/
 
+                    // 第一次刷新测试效果：
                     this.refreshChunkScene();
-                    EventMgr.getins().on( "chunkmove",( xoff : number,yoff:number )=>{
+                    // 响应chunkMove的消息处理与刷新：
+                    EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
                         this.gridCoords.x += xoff;
                         this.gridCoords.y += yoff;
                         this.refreshChunkScene();
@@ -138,13 +149,10 @@ export class SceneManager {
                     this.cameraController.setCameraHeight(200);
 
                     this.bInited = true;
-
-                    this.inputMgr.on("mousewheel", (value:any) =>{
-                        //this.cameraController.(value.deltaY);
-                        this.cameraController.updateHeight( value.deltaY*.1 );
+                    this.inputMgr.on("mousewheel", (value: any) => {
+                        this.cameraController.updateHeight(value.deltaY * .05);
                     });
-
-                }, 1000);
+                }, 500);
             });
 
         });
@@ -157,12 +165,31 @@ export class SceneManager {
         });*/
     }
 
+    /**
+     * 窗口大小变化时，阴影贴图需要重新计算：
+     * window.innerWidth, window.innerHeight
+     * @param wid 
+     * @param hei 
+     */
+    protected _resizeShadowMapFrustum(wid: number, hei: number): void {
+        var start = 1.25;
+        var childStartView2 = Math.max( wid / hei, start);
+        var halfHeight = 75 * childStartView2;
+        this.dirLight!.shadow.camera.left = .9 * -halfHeight;
+        this.dirLight!.shadow.camera.right = 1.3 * halfHeight;
+        this.dirLight!.shadow.camera.top = halfHeight;
+        this.dirLight!.shadow.camera.bottom = -halfHeight;
+        this.dirLight!.shadow.camera.updateProjectionMatrix();
+    }
+
+
+
     // 
     // 最核心的场景可视化函数：检测需要删除和重新安装的chunk数据，第一次初始化的时候，
     // remove的空，但会add上去一个新的结点,需要确认 v 是如何获取的，results
     protected refreshChunkScene(): void {
         let $this = this;
-        this.chunkScene!.forEachChunk(function (results: any, xOffset : number, yOffset : number ) {
+        this.chunkScene!.forEachChunk(function (results: any, xOffset: number, yOffset: number) {
             // 只显示0,0处的Chunk.
             //if (xOffset != 0 && yOffset != 0)
             //    return;
@@ -209,9 +236,9 @@ export class SceneManager {
         this.cameraController.update();
 
         //! SceneMoveController:
-        if( this.bInited )
+        if (this.bInited)
             this.smController?.update();
-        
+
 
         // 更新射线投射器
         this.raycaster.setFromCamera(this.mouse, this.cameraController.camera);

@@ -324,8 +324,9 @@ export class BlockLoaded {
 
                 // 
                 // 生成一个基本Mat用于测试效果:ATTENTION TO OPP:
-                let tmat : THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({ map: textures[jsdata[i].map] });
-                materials[material.uuid] = tmat;
+                //let tmat : THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({ map: textures[jsdata[i].map] });
+                let tpmat : THREE.MeshPhysicalMaterial = new THREE.MeshPhysicalMaterial({ map: textures[jsdata[i].map] });
+                materials[material.uuid] = tpmat;
             }
         }
         return materials;

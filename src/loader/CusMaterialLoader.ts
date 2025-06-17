@@ -175,6 +175,4 @@ export class CusMaterialLoader extends THREE.MaterialLoader {
             emissiveMap: emissiveMap
         });
     }*/
-
-
 }
