@@ -47,8 +47,7 @@ export class SceneManager {
 
         // 创建场景
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0a0a1a);
-        this.scene.fog = new THREE.FogExp2(GVar.FOG_COLOR, MiscFunc.getDensity(800));
+        this.scene.fog = new THREE.Fog(GVar.FOG_COLOR, GVar.FOG_NEAR, GVar.FOG_FAR );
         this.scene.background = new THREE.Color(GVar.FOG_COLOR);
 
         // 创建相机控制器

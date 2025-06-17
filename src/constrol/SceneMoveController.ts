@@ -65,7 +65,8 @@ export class SceneMoveController {
 
     public raycast(): void {
         //this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
-        this._raycaster.set( this._camera!.camera.position.clone(), new THREE.Vector3( 0,-1,0 ) );
+
+        this._raycaster.set( new THREE.Vector3( 0,0,0 ),new THREE.Vector3( 0,-1,0 ) );
         var intersectors = this._raycaster.intersectObjects(this._scene!.getPickables());
         if (intersectors.length > 0) {
             let insectObj = intersectors[0].object;
