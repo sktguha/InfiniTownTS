@@ -92,6 +92,16 @@ export class CameraController {
 
         this.controls.update();
 
+        console.log( "Rotation Angle:" + this.controls.getAzimuthalAngle() );
+
+    }
+
+    /**
+     * 获取旋转角度，根据旋转角度移动场景：
+     * @returns 
+     */
+    public getRotationAngle(): number {
+        return this.controls.getAzimuthalAngle();
     }
 
     public onWindowResize(container: HTMLElement): void {

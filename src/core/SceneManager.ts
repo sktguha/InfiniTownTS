@@ -216,11 +216,6 @@ export class SceneManager {
         // 更新射线投射器
         this.raycaster.setFromCamera(this.mouse, this.cameraController.camera);
 
-        // 检测鼠标悬停的物体
-        /*
-        const intersects = this.raycaster.intersectObjects(
-            this.objects.map(obj => obj.mesh)
-        );*/
 
         // 渲染场景
         this.renderer.render(this.scene, this.cameraController.camera);

@@ -84,12 +84,16 @@ export class SceneMoveController {
      */
     public update(): void {
         var offset = new THREE.Vector2;
-        var angle = new THREE.Vector2;
+        var angle = new THREE.Vector2(0,0);
         var point = new THREE.Vector3;
 
         this.raycast();
         offset.copy(this._offset);
-        offset.rotateAround(angle, -Math.PI / 4);
+
+        // 这个是计算场景与相机旋转的转换数据:
+        //offset.rotateAround(angle, -Math.PI / 4);
+        offset.rotateAround(angle, -this._camera!.getRotationAngle() );
+
         // 根据移动速度，来拟合一个最终的效果
         this._worldOffset.set(offset.x, 0, offset.y).multiply(this._speed);
         // 使用线性插值（lerp）技术，使 point 值以每帧 5% 的步幅平滑趋向 _worldOffset。
