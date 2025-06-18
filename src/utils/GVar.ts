@@ -44,6 +44,8 @@ export class GVar {
         (touches[0].clientY - touches[1].clientY));
     }
 
+    public static bUseProbe : boolean = true;
+
 
     //!　全局变量:
     public static FPS: boolean = false;

@@ -9,14 +9,17 @@ import * as THREE from 'three';
  */
 export class SceneMoveController {
 
-    public vec2 = new THREE.Vector2;
     protected _panning: boolean = false;
+    //! 拖动开始时的屏幕坐标：
     protected _startCoords = new THREE.Vector2;
     protected _lastOffset = new THREE.Vector2;
+    //! 用于计算拖动效果的屏幕位移临时量:
     protected _offset = new THREE.Vector2;
+    //! 鼠标拖动时的移动速度: 
     protected _speed = new THREE.Vector3(GVar.PAN_SPEED, 0, GVar.PAN_SPEED);
     protected _sceneOffset = new THREE.Vector3(0,0,0 );
-    protected _worldOffset = new THREE.Vector3;
+    //! 这个是用于拟合场景移动向量的临时变量:
+    protected _tmpWorldOffset = new THREE.Vector3;
 
     protected _inputManager: InputMgr | null = null;
     protected _scene: AppScene | null = null;
@@ -42,6 +45,7 @@ export class SceneMoveController {
         if (this.enabled) {
             this._panning = true;
             this._startCoords.set(evt.x, evt.y);
+            console.log( "StartCord:" + JSON.stringify( this._startCoords ) );
         }
     }
 
@@ -49,16 +53,19 @@ export class SceneMoveController {
         if (this.enabled) {
             this._panning = false;
             this._lastOffset.copy(this._offset);
+            console.log( "LastOffset:" + JSON.stringify( this._startCoords ) );
         }
     }
     protected _onDrag(evt: any): void {
         var vector = new THREE.Vector2(0, 0);
         this.tmpVec2.x = evt.x;
         this.tmpVec2.y = evt.y;
-        this.vec2.copy(this.tmpVec2);
         if (this.enabled && this._panning) {
+            // 这些操作，都是为了更加平滑的移动效果：
             vector.subVectors(this.tmpVec2, this._startCoords);
             this._offset.addVectors(this._lastOffset, vector);
+            console.log( "AddValue is:" + JSON.stringify( this._offset ) 
+                + "___" + JSON.stringify( this._lastOffset ) + "___" + JSON.stringify( vector ) );
         }
     }
 
@@ -72,6 +79,11 @@ export class SceneMoveController {
             let insectObj = intersectors[0].object;
             let cx : number = (insectObj as any).userData["centeredX"];
             let cy : number = (insectObj as any).userData["centeredY"];
+            
+            // TEST CODE TO DELETE:
+            //if( cx != 0 && cy != 0 )
+            //    debugger;
+
             this._sceneOffset.x += cx * GVar.CHUNK_SIZE;
             this._sceneOffset.z += cy * GVar.CHUNK_SIZE;
             if (!(0 === cx && 0 === cy)) {
@@ -95,11 +107,11 @@ export class SceneMoveController {
         offset.rotateAround(angle, -this._camera!.getRotationAngle() );
 
         // 根据移动速度，来拟合一个最终的效果
-        this._worldOffset.set(offset.x, 0, offset.y).multiply(this._speed);
+        this._tmpWorldOffset.set(offset.x, 0, offset.y).multiply(this._speed);
         // 使用线性插值（lerp）技术，使 point 值以每帧 5% 的步幅平滑趋向 _worldOffset。
         // 这意味着场景不会立即跳到新位置，而是逐渐移动，使移动过程更自然流畅。这种平滑效果对用户体验至关重要。
         // 因为有offset的实际数据，所以最终还是会到达目标位置的
-        point.lerp(this._worldOffset, .25);
+        point.lerp(this._tmpWorldOffset, .25);
 
         // 
         // 处理场景内的位置偏移量：

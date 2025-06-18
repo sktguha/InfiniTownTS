@@ -54,19 +54,23 @@ export class SceneManager {
         // 创建相机控制器
         this.cameraController = new CameraController(container);
 
-        // 初始化lightProbe:
-        /*
-        this.envLightProbe.initLightProbe("./assets/environments/envProbe/irradiance.json", (light: THREE.LightProbe) => {
-            this.scene.add(light);
-            this.scene.environment = light as any;
-        });*/
+        // 
+        // 用简版环境光还是复杂版本的环境光:
+        if (GVar.bUseProbe) {
+            this.envLightProbe.initLightProbe("./assets/environments/envProbe/irradiance.json",
+                (light: THREE.LightProbe) => {
+                    this.scene.add(light);
+                    this.scene.environment = light as any;
+                });
+        }else{
+            this.loadEnvMapLighting();
+        }
         
-
         // 创建渲染器
         this.renderer = new Renderer(container);
-        this.renderer.setSaturation( 1.6 );
+        this.renderer.setSaturation(1.15);
         this.renderer.renderer.setClearColor(GVar.FOG_COLOR);
-        this.loadEnvMapLighting();
+
 
         // 添加环境光
         const ambientLight = new THREE.AmbientLight(0xcccccc, 0.8);

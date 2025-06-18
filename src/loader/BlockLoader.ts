@@ -1,4 +1,3 @@
-import { mx_bilerp_0 } from "three/src/nodes/materialx/lib/mx_noise.js";
 import { MiscFunc } from "../utils/MiscFunc";
 import * as THREE from 'three';
 
@@ -334,6 +333,7 @@ export class BlockLoaded {
                 if( jd.aoMap ){
                     tpmat.aoMap = textures[jd.aoMap];
                     tpmat.aoMapIntensity = jd.aoFactor;
+                    tpmat.aoMap!.channel = 1;
                 }
                 if(jd.glossFactor){
                     tpmat.roughness = jd.glossFactor;

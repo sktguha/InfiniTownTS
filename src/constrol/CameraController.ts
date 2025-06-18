@@ -100,7 +100,7 @@ export class CameraController {
 
         this.controls.update();
 
-        console.log( "Rotation Angle:" + this.controls.getAzimuthalAngle() );
+        //console.log( "Rotation Angle:" + this.controls.getAzimuthalAngle() );
 
     }
 
