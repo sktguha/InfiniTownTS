@@ -13,6 +13,7 @@ import { InputMgr } from '../constrol/InputMgr';
 import { SceneMoveController } from '../constrol/SceneMoveController';
 import { EventMgr } from '../utils/EventMgr';
 import { LightProbeLoader } from '../loader/LightProbeLoader';
+import { EXRLoader } from 'three/examples/jsm/Addons.js';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -47,22 +48,28 @@ export class SceneManager {
 
         // 创建场景
         this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.Fog(GVar.FOG_COLOR, GVar.FOG_NEAR, GVar.FOG_FAR );
+        this.scene.fog = new THREE.Fog(GVar.FOG_COLOR, GVar.FOG_NEAR, GVar.FOG_FAR);
         this.scene.background = new THREE.Color(GVar.FOG_COLOR);
 
         // 创建相机控制器
         this.cameraController = new CameraController(container);
 
         // 初始化lightProbe:
-        this.envLightProbe.initLightProbe("./assets/environments/envProbe/irradiance.json");
+        /*
+        this.envLightProbe.initLightProbe("./assets/environments/envProbe/irradiance.json", (light: THREE.LightProbe) => {
+            this.scene.add(light);
+            this.scene.environment = light as any;
+        });*/
+        
 
         // 创建渲染器
         this.renderer = new Renderer(container);
-
+        this.renderer.setSaturation( 1.6 );
         this.renderer.renderer.setClearColor(GVar.FOG_COLOR);
+        this.loadEnvMapLighting();
 
         // 添加环境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+        const ambientLight = new THREE.AmbientLight(0xcccccc, 0.8);
         this.scene.add(ambientLight);
 
         // 添加坐标轴
@@ -155,13 +162,30 @@ export class SceneManager {
             });
 
         });
+    }
 
-        // 添加鼠标移动监听（用于物体拾取）
-        /*
-        renderer.renderer.domElement.addEventListener('mousemove', (event) => {
-            this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        });*/
+    /**
+     * 加载全局的环境光数据:
+     */
+    protected loadEnvMapLighting(): void {
+        // ⚙️ 创建环境贴图生成器
+        const pmremGenerator = new THREE.PMREMGenerator(this.renderer.renderer);
+        pmremGenerator.compileEquirectangularShader();
+        // 🔧 加载 .exr 文件
+        new EXRLoader()
+            .load('./assets/environments/DayStreet.exr', (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+
+                // 生成环境贴图
+                const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+
+                // 应用到场景
+                this.scene.environment = envMap;
+                //scene.background = envMap; // 如果想让它作为背景
+
+                texture.dispose();
+                pmremGenerator.dispose();
+            });
     }
 
     /**
@@ -172,7 +196,7 @@ export class SceneManager {
      */
     protected _resizeShadowMapFrustum(wid: number, hei: number): void {
         var start = 1.25;
-        var childStartView2 = Math.max( wid / hei, start);
+        var childStartView2 = Math.max(wid / hei, start);
         var halfHeight = 75 * childStartView2;
         this.dirLight!.shadow.camera.left = .9 * -halfHeight;
         this.dirLight!.shadow.camera.right = 1.3 * halfHeight;

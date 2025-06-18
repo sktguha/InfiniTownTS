@@ -10,6 +10,7 @@ export class CameraController {
     private originalMaxPolarAngle: number = Math.PI;
     private bPolarAdj: boolean = false;
     private readonly tolerance: number = 0.005;
+    protected vec3CamTarget : THREE.Vector3 = new THREE.Vector3(0, 0, 0);  
 
 
     constructor(container: HTMLElement) {
@@ -40,6 +41,13 @@ export class CameraController {
         this.controls.maxPolarAngle = pa;
         this.bPolarAdj = false;
 
+    }
+
+    public updateCamPos( v3 : THREE.Vector3 ) : void{
+        this.controls.target.x = -v3.x;
+        this.controls.target.y = -v3.y;
+        this.controls.target.z = -v3.z;
+        this.controls.update();
     }
 
     public setCameraHeight(height: number): void {

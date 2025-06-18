@@ -86,13 +86,12 @@ export class SceneMoveController {
     public update(): void {
         var offset = new THREE.Vector2;
         var angle = new THREE.Vector2(0,0);
-        var point = new THREE.Vector3;
+        var point = new THREE.Vector3(0,0,0 );
 
         this.raycast();
         offset.copy(this._offset);
 
         // 这个是计算场景与相机旋转的转换数据:
-        //offset.rotateAround(angle, -Math.PI / 4);
         offset.rotateAround(angle, -this._camera!.getRotationAngle() );
 
         // 根据移动速度，来拟合一个最终的效果
@@ -103,7 +102,12 @@ export class SceneMoveController {
         point.lerp(this._worldOffset, .25);
 
         // 
-        // WORK START: 从这里开始，处理场景内的位置偏移量：
+        // 处理场景内的位置偏移量：
         this._scene!.position.addVectors(this._sceneOffset, point);
+
+        // WORK START: 接下来的重点，相机移动与整体的材质数据： 
+        // 优化为相机移动:
+        //this._camera!.updateCamPos( point.addVectors(this._sceneOffset, point));
+        //console.log( "Scene Move:" + point.x + "," + point.z ); 
     }
 }

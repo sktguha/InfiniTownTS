@@ -1,3 +1,4 @@
+import { mx_bilerp_0 } from "three/src/nodes/materialx/lib/mx_noise.js";
 import { MiscFunc } from "../utils/MiscFunc";
 import * as THREE from 'three';
 
@@ -320,13 +321,29 @@ export class BlockLoaded {
             var jsonLength = jsdata.length;
             for (let i: number = 0; i < jsonLength; i++) {
                 // 生成Pbr材质:
-                var material = loader.parse(jsdata[i]);
+                //var material = loader.parse(jsdata[i]);
 
                 // 
                 // 生成一个基本Mat用于测试效果:ATTENTION TO OPP:
                 //let tmat : THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({ map: textures[jsdata[i].map] });
-                let tpmat : THREE.MeshPhysicalMaterial = new THREE.MeshPhysicalMaterial({ map: textures[jsdata[i].map] });
-                materials[material.uuid] = tpmat;
+                let jd : any = jsdata[i];
+                let tpmat : THREE.MeshPhysicalMaterial = new THREE.MeshPhysicalMaterial({ map: textures[jd.map] });
+                if( jd.color ){
+                    tpmat.color = new THREE.Color( jd.color );
+                }
+                if( jd.aoMap ){
+                    tpmat.aoMap = textures[jd.aoMap];
+                    tpmat.aoMapIntensity = jd.aoFactor;
+                }
+                if(jd.glossFactor){
+                    tpmat.roughness = jd.glossFactor;
+                }
+                //debugger;
+                if( jd.metalFactor )
+                    tpmat.metalness = jd.metalFactor;
+                tpmat.envMapIntensity  = 1.3;
+             
+                materials[jd.uuid] = tpmat;
             }
         }
         return materials;
@@ -348,6 +365,7 @@ export class BlockLoaded {
             manager.itemStart(url);
             loader.load(url, (image) => {
                 const texture = new THREE.Texture(image);
+                texture.colorSpace = THREE.SRGBColorSpace;
                 texture.needsUpdate = true;
                 images[uuid] = texture;
                 manager.itemEnd(url);
