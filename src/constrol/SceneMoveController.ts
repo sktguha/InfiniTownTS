@@ -12,9 +12,13 @@ export class SceneMoveController {
     protected _panning: boolean = false;
     //! 拖动开始时的屏幕坐标：
     protected _startCoords = new THREE.Vector2;
+    //! 这个数据记录了鼠标在屏幕上总的移动像素数，所有的移动都是衔接到一起的
+    //! 下面的变量_offset也是在_lastOffet的基础上进行叠加的：
     protected _lastOffset = new THREE.Vector2;
+
     //! 用于计算拖动效果的屏幕位移临时量:
     protected _offset = new THREE.Vector2;
+
     //! 鼠标拖动时的移动速度: 
     protected _speed = new THREE.Vector3(GVar.PAN_SPEED, 0, GVar.PAN_SPEED);
     protected _sceneOffset = new THREE.Vector3(0,0,0 );
@@ -36,16 +40,16 @@ export class SceneMoveController {
         this._camera = cam;
         this.enabled = true;
 
-        imgr.on("startdrag", this._onStartDrag.bind(this));
-        imgr.on("enddrag", this._onEndDrag.bind(this));
-        imgr.on("drag", this._onDrag.bind(this));
+        //imgr.on("startdrag", this._onStartDrag.bind(this));
+        //imgr.on("enddrag", this._onEndDrag.bind(this));
+        //imgr.on("drag", this._onDrag.bind(this));
     }
 
     protected _onStartDrag(evt: any): void {
         if (this.enabled) {
             this._panning = true;
             this._startCoords.set(evt.x, evt.y);
-            console.log( "StartCord:" + JSON.stringify( this._startCoords ) );
+            //console.log( "StartCord:" + JSON.stringify( this._startCoords ) );
         }
     }
 
@@ -53,7 +57,7 @@ export class SceneMoveController {
         if (this.enabled) {
             this._panning = false;
             this._lastOffset.copy(this._offset);
-            console.log( "LastOffset:" + JSON.stringify( this._startCoords ) );
+            //console.log( "LastOffset:" + JSON.stringify( this._startCoords ) );
         }
     }
     protected _onDrag(evt: any): void {
@@ -64,19 +68,32 @@ export class SceneMoveController {
             // 这些操作，都是为了更加平滑的移动效果：
             vector.subVectors(this.tmpVec2, this._startCoords);
             this._offset.addVectors(this._lastOffset, vector);
-            console.log( "AddValue is:" + JSON.stringify( this._offset ) 
-                + "___" + JSON.stringify( this._lastOffset ) + "___" + JSON.stringify( vector ) );
+            //console.log( "AddValue is:" + JSON.stringify( this._offset ) 
+            //    + "___" + JSON.stringify( this._lastOffset ) + "___" + JSON.stringify( vector ) );
         }
     }
 
 
     public raycast(): void {
         //this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
-
-        this._raycaster.set( new THREE.Vector3( 0,0,0 ),new THREE.Vector3( 0,-1,0 ) );
+        let castVec : THREE.Vector3 = new THREE.Vector3( 0,0,0 );
+        castVec.copy( this._camera?.controls.target! );
+        // 
+        // 在某些情况下没有更新，是因为这个castVec的目标点是零，而点击面也是零，所以可能出错.
+        castVec.y += 1;
+        this._raycaster.set( castVec,new THREE.Vector3( 0,-1,0 ) );
         var intersectors = this._raycaster.intersectObjects(this._scene!.getPickables());
         if (intersectors.length > 0) {
             let insectObj = intersectors[0].object;
+            
+            // 
+            // TEST CODE TO DELETE:
+            /*
+            let arr : Array<any> = this._scene!.getPickables();
+            for( let ti : number =0;ti<arr.length;ti++ )
+                arr[ti].visible = false;
+            insectObj.visible = true;*/
+
             let cx : number = (insectObj as any).userData["centeredX"];
             let cy : number = (insectObj as any).userData["centeredY"];
             
@@ -86,19 +103,19 @@ export class SceneMoveController {
 
             this._sceneOffset.x += cx * GVar.CHUNK_SIZE;
             this._sceneOffset.z += cy * GVar.CHUNK_SIZE;
-            if (!(0 === cx && 0 === cy)) {
-                EventMgr.getins().trigger("chunkmove", cx,cy );
-            }
+            //if (!(0 === cx && 0 === cy)) {
+            EventMgr.getins().trigger("chunkmove", cx,cy );
+            //}
         }
     }
 
+    protected point = new THREE.Vector3(0,0,0);
     /**
      * 更新控制器.
      */
     public update(): void {
         var offset = new THREE.Vector2;
         var angle = new THREE.Vector2(0,0);
-        var point = new THREE.Vector3(0,0,0 );
 
         this.raycast();
         offset.copy(this._offset);
@@ -107,19 +124,22 @@ export class SceneMoveController {
         offset.rotateAround(angle, -this._camera!.getRotationAngle() );
 
         // 根据移动速度，来拟合一个最终的效果
+        //offset.x = 300;
+        //offset.y = 300;
         this._tmpWorldOffset.set(offset.x, 0, offset.y).multiply(this._speed);
         // 使用线性插值（lerp）技术，使 point 值以每帧 5% 的步幅平滑趋向 _worldOffset。
         // 这意味着场景不会立即跳到新位置，而是逐渐移动，使移动过程更自然流畅。这种平滑效果对用户体验至关重要。
         // 因为有offset的实际数据，所以最终还是会到达目标位置的
-        point.lerp(this._tmpWorldOffset, .25);
+        //this.point.lerp(this._tmpWorldOffset, .01);
+        this.point.copy(this._tmpWorldOffset );
 
         // 
         // 处理场景内的位置偏移量：
-        this._scene!.position.addVectors(this._sceneOffset, point);
+        this._scene!.position.addVectors(this._sceneOffset, this.point);
 
         // WORK START: 接下来的重点，相机移动与整体的材质数据： 
         // 优化为相机移动:
-        //this._camera!.updateCamPos( point.addVectors(this._sceneOffset, point));
-        //console.log( "Scene Move:" + point.x + "," + point.z ); 
+        //this._camera!.updateCamPos( this.point.addVectors(this._sceneOffset, this.point));
+        //console.log( "Scene Move:" + JSON.stringify( this.point ) );
     }
 }

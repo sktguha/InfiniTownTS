@@ -35,7 +35,10 @@ export class AppScene extends THREE.Scene {
         const centerOffset = Math.floor(GVar.CHUNK_COUNT / 2);
         mesh.userData["centeredX"] = x - centerOffset;
         mesh.userData["centeredY"] = z - centerOffset;
+
+        // TEST CODE TO DELETE:
         mesh.visible = false;
+        mesh.position.y += 0.25;
 
         // 添加到可拾取对象数组
         this._pickables.push(mesh);

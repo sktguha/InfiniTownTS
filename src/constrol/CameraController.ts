@@ -10,7 +10,7 @@ export class CameraController {
     private originalMaxPolarAngle: number = Math.PI;
     private bPolarAdj: boolean = false;
     private readonly tolerance: number = 0.005;
-    protected vec3CamTarget : THREE.Vector3 = new THREE.Vector3(0, 0, 0);  
+    protected vec3CamTarget: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
 
     constructor(container: HTMLElement) {
@@ -32,7 +32,7 @@ export class CameraController {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         // 禁用所有移动相关的功能
-        this.controls.enablePan = false;      // 禁用平移（鼠标右键拖拽）
+        this.controls.enablePan = true;      // 禁用平移（鼠标右键拖拽）
         this.controls.enableZoom = false;      // 禁用缩放（鼠标滚轮）
         this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
 
@@ -41,9 +41,27 @@ export class CameraController {
         this.controls.maxPolarAngle = pa;
         this.bPolarAdj = false;
 
+        /*
+        let isResetting : boolean = false;
+        this.controls.addEventListener('change', () => {
+            if( isResetting ) return;
+            // 获取球面坐标的水平角度
+            let horizontalAngle : number = this.controls.getAzimuthalAngle();
+            console.log( "Get Hori rot:" + horizontalAngle );
+            isResetting = true;
+            try {
+                this.controls.reset();
+            } finally {
+                // 使用setTimeout确保在下一次事件循环前清除标志
+                setTimeout(() => {
+                    isResetting = false;
+                }, 0);
+            }
+        });*/
+
     }
 
-    public updateCamPos( v3 : THREE.Vector3 ) : void{
+    public updateCamPos(v3: THREE.Vector3): void {
         this.controls.target.x = -v3.x;
         this.controls.target.y = -v3.y;
         this.controls.target.z = -v3.z;
@@ -56,12 +74,12 @@ export class CameraController {
         this.unlockVerticalRotation();
     }
 
-    public updateHeight( value : number ) : void{
+    public updateHeight(value: number): void {
         this.targetHeight = this.targetHeight + value;
-        if( this.targetHeight < 30 ){
+        if (this.targetHeight < 30) {
             this.targetHeight = 30;
         }
-        if( this.targetHeight>140 )
+        if (this.targetHeight > 140)
             this.targetHeight = 140;
 
         this.unlockVerticalRotation();
@@ -100,7 +118,6 @@ export class CameraController {
 
         this.controls.update();
 
-        //console.log( "Rotation Angle:" + this.controls.getAzimuthalAngle() );
 
     }
 

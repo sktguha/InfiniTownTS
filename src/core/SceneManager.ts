@@ -32,6 +32,8 @@ export class SceneManager {
     protected cityChkTbl: CityChunkTbl | null = null;
     // ChunkScene场景核心组织类：
     protected chunkScene: AppScene | null = null;
+    // 
+    protected mPivot: any | null = null;
 
     // 
     // 网格坐标,无限循环场景的核心算法类：
@@ -53,7 +55,10 @@ export class SceneManager {
 
         // 创建相机控制器
         this.cameraController = new CameraController(container);
-
+        container.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+        
         // 
         // 用简版环境光还是复杂版本的环境光:
         if (GVar.bUseProbe) {
@@ -62,10 +67,10 @@ export class SceneManager {
                     this.scene.add(light);
                     this.scene.environment = light as any;
                 });
-        }else{
+        } else {
             this.loadEnvMapLighting();
         }
-        
+
         // 创建渲染器
         this.renderer = new Renderer(container);
         this.renderer.setSaturation(1.15);
@@ -121,7 +126,10 @@ export class SceneManager {
                 this.cityChkTbl = new CityChunkTbl(arrBlocks, arrLanes, arrIntersections, arrCars, arrClouds);
                 this.chunkScene = new AppScene();
                 this.chunkScene.initChunks();
-                this.scene.add(this.chunkScene);
+                const pivot = new THREE.Group();
+                pivot.add(this.chunkScene);
+                this.scene.add(pivot);
+                this.mPivot = pivot;
 
                 // 初始化方向光：
                 this.dirLight = this.renderer.initDirLight();
@@ -162,6 +170,9 @@ export class SceneManager {
                     this.inputMgr.on("mousewheel", (value: any) => {
                         this.cameraController.updateHeight(value.deltaY * .05);
                     });
+
+                    // 初始化keyEvent:
+                    this.initKeyEvent();
                 }, 500);
             });
 
@@ -278,6 +289,16 @@ export class SceneManager {
     private onWindowResize(container: HTMLElement): void {
         this.cameraController.onWindowResize(container);
         this.renderer.onWindowResize(container);
+    }
+
+    protected mRotY: number = 0;
+    protected initKeyEvent(): void {
+        window.addEventListener("keydown", (event) => {
+            if (event.key === 'z') {
+                this.mRotY = this.mRotY + Math.PI / 72;
+                (this.mPivot as THREE.Group)!.rotateY(Math.PI / 72);
+            }
+        });
     }
 
     public dispose(): void {
