@@ -21,7 +21,7 @@ export class SceneMoveController {
 
     //! 鼠标拖动时的移动速度: 
     protected _speed = new THREE.Vector3(GVar.PAN_SPEED, 0, GVar.PAN_SPEED);
-    protected _sceneOffset = new THREE.Vector3(0,0,0 );
+    protected _sceneOffset = new THREE.Vector3(0, 0, 0);
     //! 这个是用于拟合场景移动向量的临时变量:
     protected _tmpWorldOffset = new THREE.Vector3;
 
@@ -76,52 +76,53 @@ export class SceneMoveController {
 
     public raycast(): void {
         //this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
-        let castVec : THREE.Vector3 = new THREE.Vector3( 0,0,0 );
-        castVec.copy( this._camera?.controls.target! );
+        let castVec: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+        castVec.copy(this._camera?.controls.target!);
         // 
         // 在某些情况下没有更新，是因为这个castVec的目标点是零，而点击面也是零，所以可能出错.
         castVec.y += 1;
-        this._raycaster.set( castVec,new THREE.Vector3( 0,-1,0 ) );
+        this._raycaster.set(castVec, new THREE.Vector3(0, -1, 0));
         var intersectors = this._raycaster.intersectObjects(this._scene!.getPickables());
         if (intersectors.length > 0) {
             let insectObj = intersectors[0].object;
-            
-            // 
-            // TEST CODE TO DELETE:
-            /*
-            let arr : Array<any> = this._scene!.getPickables();
-            for( let ti : number =0;ti<arr.length;ti++ )
-                arr[ti].visible = false;
-            insectObj.visible = true;*/
 
-            let cx : number = (insectObj as any).userData["centeredX"];
-            let cy : number = (insectObj as any).userData["centeredY"];
-            
+            // 
+            // 是否显示调试信息:
+            if (GVar.bVisDebug) {
+                let arr: Array<any> = this._scene!.getPickables();
+                for (let ti: number = 0; ti < arr.length; ti++)
+                    arr[ti].visible = false;
+                insectObj.visible = true;
+            }
+
+            let cx: number = (insectObj as any).userData["centeredX"];
+            let cy: number = (insectObj as any).userData["centeredY"];
+
             // TEST CODE TO DELETE:
             //if( cx != 0 && cy != 0 )
             //    debugger;
 
             this._sceneOffset.x += cx * GVar.CHUNK_SIZE;
             this._sceneOffset.z += cy * GVar.CHUNK_SIZE;
-            //if (!(0 === cx && 0 === cy)) {
-            EventMgr.getins().trigger("chunkmove", cx,cy );
-            //}
+
+            EventMgr.getins().trigger("chunkmove", cx, cy);
+
         }
     }
 
-    protected point = new THREE.Vector3(0,0,0);
+    protected point = new THREE.Vector3(0, 0, 0);
     /**
      * 更新控制器.
      */
     public update(): void {
         var offset = new THREE.Vector2;
-        var angle = new THREE.Vector2(0,0);
+        var angle = new THREE.Vector2(0, 0);
 
         this.raycast();
         offset.copy(this._offset);
 
         // 这个是计算场景与相机旋转的转换数据:
-        offset.rotateAround(angle, -this._camera!.getRotationAngle() );
+        offset.rotateAround(angle, -this._camera!.getRotationAngle());
 
         // 根据移动速度，来拟合一个最终的效果
         //offset.x = 300;
@@ -131,7 +132,7 @@ export class SceneMoveController {
         // 这意味着场景不会立即跳到新位置，而是逐渐移动，使移动过程更自然流畅。这种平滑效果对用户体验至关重要。
         // 因为有offset的实际数据，所以最终还是会到达目标位置的
         //this.point.lerp(this._tmpWorldOffset, .01);
-        this.point.copy(this._tmpWorldOffset );
+        this.point.copy(this._tmpWorldOffset);
 
         // 
         // 处理场景内的位置偏移量：

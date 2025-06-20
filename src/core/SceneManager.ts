@@ -1,8 +1,6 @@
 import * as THREE from 'three';
 import { Renderer } from './Renderer';
 import type { IObject } from '../interfaces/IObject';
-import { CityLoader } from './CityLoader';
-import { MiscFunc } from '../utils/MiscFunc';
 import { GVar } from '../utils/GVar';
 import { AppScene } from './AppScene';
 import { BinLoader } from '../loader/BinLoader';
@@ -45,6 +43,9 @@ export class SceneManager {
 
     // 是否初始化:
     protected bInited: boolean = false;
+    //! 记录上一次中心位置，减少无效处理:
+    protected iLastCx: number = -100000000;
+    protected iLastCy: number = -100000000;
 
     constructor(container: HTMLElement) {
 
@@ -58,7 +59,7 @@ export class SceneManager {
         container.addEventListener('contextmenu', function (e) {
             e.preventDefault();
         });
-        
+
         // 
         // 用简版环境光还是复杂版本的环境光:
         if (GVar.bUseProbe) {
@@ -102,9 +103,6 @@ export class SceneManager {
         window.addEventListener('resize', () => this.onWindowResize(container));
 
 
-        // 加载City:
-        // const cityLoader = new CityLoader(this.scene);
-        // cityLoader.loadClusters();
         let asce: AppScene = new AppScene();
         asce.initChunks();
 
@@ -126,10 +124,13 @@ export class SceneManager {
                 this.cityChkTbl = new CityChunkTbl(arrBlocks, arrLanes, arrIntersections, arrCars, arrClouds);
                 this.chunkScene = new AppScene();
                 this.chunkScene.initChunks();
-                const pivot = new THREE.Group();
+                this.scene.add(this.chunkScene);
+                // 如果从相机的角度来处理的话，不需要Pivot这个中间数据了.
+                /* const pivot = new THREE.Group();
                 pivot.add(this.chunkScene);
                 this.scene.add(pivot);
-                this.mPivot = pivot;
+                this.mPivot = pivot; */
+
 
                 // 初始化方向光：
                 this.dirLight = this.renderer.initDirLight();
@@ -143,25 +144,21 @@ export class SceneManager {
 
                 // 
                 setTimeout(() => {
-                    /*
-                    let images: any = obj.userData["images"];
-                    let arrtex: any = obj.userData["textures"];
-                                        
-                    const geometry = new THREE.BoxGeometry(2, 2, 2);
-                    const material = new THREE.MeshStandardMaterial({ map: arrtex['0E12E1AB-1D22-4642-BFB5-BC955808BB55'] });
-                    const cube = new THREE.Mesh(geometry, material);
-                    this.scene.add(cube);
-
-                    let tmesh : any = arrBlocks[0];
-                    tmesh.position.set(0, 0, 0);
-                    this.scene.add(tmesh);*/
 
                     // 第一次刷新测试效果：
                     this.refreshChunkScene();
                     // 响应chunkMove的消息处理与刷新：
                     EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
+                        // 
+                        // 数值相同的情况下，不做任何处理直接返回：WORK START:测试本段代码，查看问题:
+                        if (xoff == this.iLastCx || this.iLastCy == yoff) {
+                            return;
+                        }
+                        this.iLastCx = xoff;
+                        this.iLastCy = yoff;
                         this.gridCoords.x += xoff;
                         this.gridCoords.y += yoff;
+
                         this.refreshChunkScene();
                     });
                     this.cameraController.setCameraHeight(200);
@@ -196,7 +193,7 @@ export class SceneManager {
 
                 // 应用到场景
                 this.scene.environment = envMap;
-                //scene.background = envMap; // 如果想让它作为背景
+                //this.scene.background = envMap; // 如果想让它作为背景
 
                 texture.dispose();
                 pmremGenerator.dispose();
@@ -228,10 +225,6 @@ export class SceneManager {
     protected refreshChunkScene(): void {
         let $this = this;
         this.chunkScene!.forEachChunk(function (results: any, xOffset: number, yOffset: number) {
-            // 只显示0,0处的Chunk.
-            //if (xOffset != 0 && yOffset != 0)
-            //    return;
-
             var xcor = $this.gridCoords.x + xOffset;
             var ycor = $this.gridCoords.y + yOffset;
             var v = $this.cityChkTbl!.getChunkData(xcor, ycor);
@@ -311,3 +304,23 @@ export class SceneManager {
         this.renderer.renderer.domElement.removeEventListener('mousemove', () => { });
     }
 }
+
+/*
+import { CityLoader } from './CityLoader';
+import { MiscFunc } from '../utils/MiscFunc';
+
+        // 加载City:
+        // const cityLoader = new CityLoader(this.scene);
+        // cityLoader.loadClusters();
+
+let images: any = obj.userData["images"];
+let arrtex: any = obj.userData["textures"];
+                    
+const geometry = new THREE.BoxGeometry(2, 2, 2);
+const material = new THREE.MeshStandardMaterial({ map: arrtex['0E12E1AB-1D22-4642-BFB5-BC955808BB55'] });
+const cube = new THREE.Mesh(geometry, material);
+this.scene.add(cube);
+
+let tmesh : any = arrBlocks[0];
+tmesh.position.set(0, 0, 0);
+this.scene.add(tmesh);*/

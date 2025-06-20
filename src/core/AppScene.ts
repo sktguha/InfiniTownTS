@@ -25,7 +25,12 @@ export class AppScene extends THREE.Scene {
             1,
             1
         );
-        const material = new THREE.MeshBasicMaterial();
+
+        const material = new THREE.MeshBasicMaterial({
+            color : 0x00ff00,
+            transparent: true,     // 启用透明度
+            opacity: 0.35,          // 设置透明度值（0.0完全透明，1.0完全不透明
+        });
 
         // 创建网格对象并添加自定义属性
         const mesh = new THREE.Mesh(geometry, material);
@@ -35,10 +40,9 @@ export class AppScene extends THREE.Scene {
         const centerOffset = Math.floor(GVar.CHUNK_COUNT / 2);
         mesh.userData["centeredX"] = x - centerOffset;
         mesh.userData["centeredY"] = z - centerOffset;
-
-        // TEST CODE TO DELETE:
         mesh.visible = false;
-        mesh.position.y += 0.25;
+        if( GVar.bVisDebug )
+            mesh.position.y += 0.01;
 
         // 添加到可拾取对象数组
         this._pickables.push(mesh);

@@ -64,5 +64,7 @@ export class GVar {
     public static FOG_FAR: number = 325;
     public static FOG_COLOR: number = 10676479;
 
+    // 是否显示相关的调试信息:
+    public static bVisDebug : boolean = true;
 
 }
