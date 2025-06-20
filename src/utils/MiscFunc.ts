@@ -18,6 +18,16 @@ export class MiscFunc{
     }
 
     /**
+     * 从数组中随机选择一个元素
+     * @param options 数组
+     * @returns 随机元素
+     */
+    public static getRandElement<T>(options: T[]): T {
+        return options[Math.floor(MiscFunc.random() * options.length)];
+    }
+
+
+    /**
      * 定义一个异步函数，用于获取 JSON 数据
      * @param filePath 
      * @returns 

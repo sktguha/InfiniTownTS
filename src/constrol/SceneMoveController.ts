@@ -40,6 +40,8 @@ export class SceneMoveController {
         this._camera = cam;
         this.enabled = true;
 
+        // 
+        // 禁用原版城市的自己的移动逻辑，直接使用OrbitConstrol提供的平移功能:
         //imgr.on("startdrag", this._onStartDrag.bind(this));
         //imgr.on("enddrag", this._onEndDrag.bind(this));
         //imgr.on("drag", this._onDrag.bind(this));
@@ -75,12 +77,13 @@ export class SceneMoveController {
 
 
     public raycast(): void {
-        //this._raycaster.setFromCamera(this.vec2, this._camera!.camera);
         let castVec: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
         castVec.copy(this._camera?.controls.target!);
+
         // 
-        // 在某些情况下没有更新，是因为这个castVec的目标点是零，而点击面也是零，所以可能出错.
-        castVec.y += 1;
+        // 加5的主要原因是：　如果不加的情况下，在某些情况下没有更新，
+        // 是因为这个castVec的目标点Y值是零，而Pickable的Y值也是零，所以可能出错.
+        castVec.y += 5;
         this._raycaster.set(castVec, new THREE.Vector3(0, -1, 0));
         var intersectors = this._raycaster.intersectObjects(this._scene!.getPickables());
         if (intersectors.length > 0) {
@@ -97,10 +100,6 @@ export class SceneMoveController {
 
             let cx: number = (insectObj as any).userData["centeredX"];
             let cy: number = (insectObj as any).userData["centeredY"];
-
-            // TEST CODE TO DELETE:
-            //if( cx != 0 && cy != 0 )
-            //    debugger;
 
             this._sceneOffset.x += cx * GVar.CHUNK_SIZE;
             this._sceneOffset.z += cy * GVar.CHUNK_SIZE;
@@ -125,22 +124,18 @@ export class SceneMoveController {
         offset.rotateAround(angle, -this._camera!.getRotationAngle());
 
         // 根据移动速度，来拟合一个最终的效果
-        //offset.x = 300;
-        //offset.y = 300;
         this._tmpWorldOffset.set(offset.x, 0, offset.y).multiply(this._speed);
         // 使用线性插值（lerp）技术，使 point 值以每帧 5% 的步幅平滑趋向 _worldOffset。
         // 这意味着场景不会立即跳到新位置，而是逐渐移动，使移动过程更自然流畅。这种平滑效果对用户体验至关重要。
         // 因为有offset的实际数据，所以最终还是会到达目标位置的
-        //this.point.lerp(this._tmpWorldOffset, .01);
-        this.point.copy(this._tmpWorldOffset);
+        this.point.lerp(this._tmpWorldOffset, .01);
+
+        // 直接到达，无插值效果：
+        //this.point.copy(this._tmpWorldOffset);
 
         // 
         // 处理场景内的位置偏移量：
         this._scene!.position.addVectors(this._sceneOffset, this.point);
 
-        // WORK START: 接下来的重点，相机移动与整体的材质数据： 
-        // 优化为相机移动:
-        //this._camera!.updateCamPos( this.point.addVectors(this._sceneOffset, this.point));
-        //console.log( "Scene Move:" + JSON.stringify( this.point ) );
     }
 }

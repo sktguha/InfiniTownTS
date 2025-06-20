@@ -60,16 +60,16 @@ export class CityChunkTbl {
 
     /**
      * 获取指定坐标的城市块数据
-     * @param i 行索引
-     * @param x 列索引
+     * @param x 行索引
+     * @param y 列索引
      * @returns 城市块数据或 undefined
      */
-    public getChunkData(i: number, x: number): ChunkData | undefined {
-        i = i % GVar.TABLE_SIZE;
+    public getChunkData(x: number, y: number): ChunkData | undefined {
         x = x % GVar.TABLE_SIZE;
-        if (i < 0) i = GVar.TABLE_SIZE + i;
+        y = y % GVar.TABLE_SIZE;
         if (x < 0) x = GVar.TABLE_SIZE + x;
-        return this.chunks[i] && this.chunks[i][x];
+        if (y < 0) y = GVar.TABLE_SIZE + y;
+        return this.chunks[x] && this.chunks[x][y];
     }
 
     /**
@@ -150,7 +150,7 @@ export class CityChunkTbl {
         let fileTooLarge: any;
         const piece = this._getNeighboringBlocks(pieceX, pieceY);
         for (let i = 0; i < 100; i++) {
-            const file = this._random(this.keys).clone();
+            const file = MiscFunc.getRandElement(this.keys).clone();
             const type = file.name;
             if (type === "block_8_merged") {
                 if (this._containsStadium) continue;
@@ -186,12 +186,12 @@ export class CityChunkTbl {
         (self as any).block = block;
 
         const d: any[] = [];
-        const result = this._random(this.lanes).clone();
+        const result = MiscFunc.getRandElement(this.lanes).clone();
         result.position.set(-30, 0, 10);
         self.add(result);
         d.push(result);
 
-        const object = this._random(this.lanes).clone();
+        const object = MiscFunc.getRandElement(this.lanes).clone();
         object.position.set(-30, 0, -10);
         matrix.makeTranslation(0, 0, -20);
         object.geometry = object.geometry.clone();
@@ -199,7 +199,7 @@ export class CityChunkTbl {
         object.geometry.applyMatrix4(matrix);
         d.push(object);
 
-        const mesh = this._random(this.lanes).clone();
+        const mesh = MiscFunc.getRandElement(this.lanes).clone();
         mesh.position.set(-10, 0, -30);
         mesh.rotation.y = Math.PI / 2;
         d.push(mesh);
@@ -208,7 +208,7 @@ export class CityChunkTbl {
         mesh.geometry.applyMatrix4(matrixWorldInverse);
         mesh.geometry.applyMatrix4(matrix);
 
-        const o = this._random(this.lanes).clone();
+        const o = MiscFunc.getRandElement(this.lanes).clone();
         o.geometry = o.geometry.clone();
         o.position.set(10, 0, -30);
         o.rotation.y = Math.PI / 2;
@@ -246,7 +246,7 @@ export class CityChunkTbl {
             // 回退方案：保持原始几何体
         }
 
-        const r = this._random(this.intersections).clone();
+        const r = MiscFunc.getRandElement(this.intersections).clone();
         r.position.set(-30, 0, 30);
         self.add(r);
 
@@ -288,25 +288,17 @@ export class CityChunkTbl {
      * 生成城市块表格
      */
     private _generate(): void {
-        for (let i = 0; i < GVar.TABLE_SIZE; i++) {
+        for (let y = 0; y < GVar.TABLE_SIZE; y++) {
             for (let x = 0; x < GVar.TABLE_SIZE; x++) {
                 if (!this.chunks[x]) {
                     this.chunks[x] = [];
                 }
-                const chunkObj: any = this._getRandomChunk(x, i);
+                const chunkObj: any = this._getRandomChunk(x, y);
                 chunkObj.tableX = x;
-                chunkObj.tableY = i;
-                this.chunks[x][i] = { node: chunkObj, tableX: x, tableY: i };
+                chunkObj.tableY = y;
+                this.chunks[x][y] = { node: chunkObj, tableX: x, tableY: y };
             }
         }
     }
 
-    /**
-     * 从数组中随机选择一个元素
-     * @param options 数组
-     * @returns 随机元素
-     */
-    private _random<T>(options: T[]): T {
-        return options[Math.floor(MiscFunc.random() * options.length)];
-    }
 }

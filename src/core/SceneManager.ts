@@ -151,9 +151,10 @@ export class SceneManager {
                     EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
                         // 
                         // 数值相同的情况下，不做任何处理直接返回：WORK START:测试本段代码，查看问题:
-                        if (xoff == this.iLastCx || this.iLastCy == yoff) {
-                            return;
-                        }
+                        //if (xoff == this.iLastCx || this.iLastCy == yoff) {
+                        //    return;
+                        //}
+                        //console.log( '对应的ChunkMove数据:' + xoff + ',' + yoff );
                         this.iLastCx = xoff;
                         this.iLastCy = yoff;
                         this.gridCoords.x += xoff;

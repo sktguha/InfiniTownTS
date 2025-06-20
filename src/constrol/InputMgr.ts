@@ -22,7 +22,7 @@ export class InputMgr {
 
     protected trigger(event: string, data: any): void {
         EventMgr.getins().trigger(event, data);
-        console.log( "Trigger Event:" + event + " Value:" + JSON.stringify( data ) );
+        //console.log( "Trigger Event:" + event + " Value:" + JSON.stringify( data ) );
     }
     protected init(): void {
         window.addEventListener("mousedown", (evt: any) => {

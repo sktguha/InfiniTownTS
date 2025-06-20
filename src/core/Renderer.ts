@@ -57,7 +57,8 @@ export class Renderer {
         this.renderer.domElement.style.left = '0';
         this.renderer.domElement.style.zIndex = '0';
 
-        // 后处理 composer 初始化
+        // 
+        // 后处理 composer 初始化,目标是达到Infitown那种场景更加鲜艳的效果，更绿，更蓝而非更亮，更白。
         this.composer = new EffectComposer(this.renderer);
         this.renderPass = new RenderPass(new THREE.Scene(), new THREE.Camera()); // 临时 → 后续 render() 绑定
         this.saturationPass = new ShaderPass(SaturationShader);

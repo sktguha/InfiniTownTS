@@ -31,9 +31,14 @@ export class CameraController {
         this.controls = new OrbitControls(this.camera, container);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
-        // 禁用所有移动相关的功能
-        this.controls.enablePan = true;      // 禁用平移（鼠标右键拖拽）
-        this.controls.enableZoom = false;      // 禁用缩放（鼠标滚轮）
+        
+        /**
+         * 平移效果可以让Camera的lookTarget不再是0,0,0点，而是一直处于变化中.
+         * 在SceneMoveController中的raycast函数将使用lookTarget来计算整体的移动方向。
+         */
+        this.controls.enablePan = true;      
+        // 禁用缩放（鼠标滚轮）鼠标滚轮的效果由自己实现
+        this.controls.enableZoom = false;      
         this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
 
         let pa: number = this.controls.getPolarAngle();
@@ -59,13 +64,6 @@ export class CameraController {
             }
         });*/
 
-    }
-
-    public updateCamPos(v3: THREE.Vector3): void {
-        this.controls.target.x = -v3.x;
-        this.controls.target.y = -v3.y;
-        this.controls.target.z = -v3.z;
-        this.controls.update();
     }
 
     public setCameraHeight(height: number): void {
