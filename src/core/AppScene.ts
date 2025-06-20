@@ -27,7 +27,7 @@ export class AppScene extends THREE.Scene {
         );
 
         const material = new THREE.MeshBasicMaterial({
-            color : 0x00ff00,
+            color: 0x00ff00,
             transparent: true,     // 启用透明度
             opacity: 0.35,          // 设置透明度值（0.0完全透明，1.0完全不透明
         });
@@ -41,13 +41,16 @@ export class AppScene extends THREE.Scene {
         mesh.userData["centeredX"] = x - centerOffset;
         mesh.userData["centeredY"] = z - centerOffset;
         mesh.visible = false;
-        if( GVar.bVisDebug )
+        if (GVar.bVisDebug)
             mesh.position.y += 0.01;
 
         // 添加到可拾取对象数组
         this._pickables.push(mesh);
 
-        // 计算位置
+        // 
+        // 计算ChunkInsContainer的位置
+        // chunkContainer的位置信息+AppScene的位置信息，构成了整个无限循环城市场景的正常运行。
+        // 而ChunkContainer内的ChunkInstance则全部位于原点位置.
         const halfSize = (GVar.CHUNK_COUNT - 1) / 2 * -GVar.CHUNK_SIZE;
         chunkInsContainer.position.x = halfSize + x * GVar.CHUNK_SIZE;
         chunkInsContainer.position.z = halfSize + z * GVar.CHUNK_SIZE;
@@ -64,40 +67,42 @@ export class AppScene extends THREE.Scene {
     }
 
 
+    /**
+     * 初始化当前AppScene内所有的ChunkInstance.
+     * @returns 
+     */
     public initChunks(): void {
-        /** @type {number} */
-        let j : number = 0;
-        for (; j < GVar.CHUNK_COUNT; j++) {
-            /** @type {number} */
-            let i : number = 0;
-            for (; i < GVar.CHUNK_COUNT; i++) {
-                if ( !this.arrChunkContainer[i]) {
-                    this.arrChunkContainer[i] = [];
+        for (let z: number = 0; z < GVar.CHUNK_COUNT; z++) {
+            for (let x: number = 0; x < GVar.CHUNK_COUNT; x++) {
+                if (!this.arrChunkContainer[x]) {
+                    this.arrChunkContainer[x] = [];
                 }
-                let chunkObj : THREE.Object3D = this.createChunkAt(i, j);
-                this.arrChunkContainer[i][j] = chunkObj;
-                this.add( chunkObj );
+                let chunkContainer: THREE.Object3D = this.createChunkAt(x, z);
+                this.arrChunkContainer[x][z] = chunkContainer;
+                this.add(chunkContainer);
             }
         }
         return;
     }
 
+    /**
+     * 获取可点击的对象数组：
+     * @returns 
+     */
     public getPickables(): THREE.Mesh[] {
         return this._pickables;
     }
 
     /**
-     * 当前场景内Chunk数组的数据回调：
+     * 当前场景内Chunk数组内所有元素的功能回调：
      * @param cb 
      */
-    public forEachChunk(cb: (chunk: THREE.Object3D, centX: number, centY: number) => void): void {
-        var i = 0;
-        for (; i < GVar.CHUNK_COUNT; i++) {
-            /** @type {number} */
-            var j = 0;
-            for (; j < GVar.CHUNK_COUNT; j++) {
-                let value: THREE.Object3D = this.arrChunkContainer[i][j];
-                cb(value, value.userData["centeredX"], value.userData["centeredY"]);
+    public forEachChunk(cb: (chunkContainer: THREE.Object3D, centX: number, centY: number) => void): void {
+        
+        for (var x : number = 0; x < GVar.CHUNK_COUNT; x++) {
+            for (var y : number = 0; y < GVar.CHUNK_COUNT; y++) {
+                let v : THREE.Object3D = this.arrChunkContainer[x][y];
+                cb(v, v.userData["centeredX"], v.userData["centeredY"]);
             }
         }
     }

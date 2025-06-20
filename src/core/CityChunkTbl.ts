@@ -7,9 +7,11 @@ import * as THREE from 'three';
 import { GVar } from '../utils/GVar';
 import { MiscFunc } from '../utils/MiscFunc';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { MobileCloud } from '../objects/MobileCloud';
+import type { IUpdate } from '../interfaces/IUpdate';
 
 // 定义城市块数据结构
-interface ChunkData {
+export interface ChunkData {
     node: THREE.Object3D;
     tableX: number;
     tableY: number;
@@ -22,9 +24,15 @@ export class CityChunkTbl {
     private intersections: any[]; // 交叉口数量
     private mobs: any[] = []; // 动态对象列表（车辆和云）
     private chunks: ChunkData[][] = []; // 城市块表格
-    //private cloudObjects: any[]; // 云对象列表
-    //private carObjects: any[]; // 车辆对象列表
+    private cloudObjects: any[]; // 云对象列表
+    private carObjects: any[]; // 车辆对象列表
 
+    /**
+     * 获取Chunks数据.
+     */
+    public get arrChunks(): ChunkData[][] {
+        return this.chunks;
+    }
     /**
      * 生成CityChunkTable数据:
      * @param cblocks 
@@ -36,8 +44,10 @@ export class CityChunkTbl {
     constructor(cblocks: any[], lanes: any[], intsects: any[], cars: any[], clouds: any[]) {
         this.keys = cblocks;
         this.intersections = intsects;
-        //this.carObjects = cars;
-        //this.cloudObjects = clouds;
+        this.carObjects = cars;
+        this.cloudObjects = clouds;
+
+        console.log( "TheObj Length is:" + this.carObjects.length + "," + this.cloudObjects.length );
 
         // 初始化道路列表
         lanes.forEach((t) => {
@@ -64,12 +74,15 @@ export class CityChunkTbl {
      * @param y 列索引
      * @returns 城市块数据或 undefined
      */
-    public getChunkData(x: number, y: number): ChunkData | undefined {
+    public getChunkData(x: number, y: number): ChunkData | null {
         x = x % GVar.TABLE_SIZE;
         y = y % GVar.TABLE_SIZE;
         if (x < 0) x = GVar.TABLE_SIZE + x;
         if (y < 0) y = GVar.TABLE_SIZE + y;
-        return this.chunks[x] && this.chunks[x][y];
+        if( this.chunks[x] && this.chunks[x][y] )
+            return this.chunks[x][y];
+        else
+            return null;
     }
 
     /**
@@ -95,12 +108,12 @@ export class CityChunkTbl {
     }
 
     /**
-     * 更新城市块中的动态元素
+     * 更新城市块中的动态可移动元素
      * @param target 更新目标
      */
-    public update(target: any): void {
-        this.mobs.forEach((e) => {
-            e.update(target);
+    public update( ed : IUpdate ): void {
+        this.mobs.forEach(( mob : any ) => {
+            mob.update( ed );
         });
     }
 
@@ -147,7 +160,7 @@ export class CityChunkTbl {
      * @returns 随机块对象
      */
     private _getRandomBlockAt(pieceX: number, pieceY: number): any {
-        let fileTooLarge: any;
+        let blockData: any;
         const piece = this._getNeighboringBlocks(pieceX, pieceY);
         for (let i = 0; i < 100; i++) {
             const file = MiscFunc.getRandElement(this.keys).clone();
@@ -155,15 +168,15 @@ export class CityChunkTbl {
             if (type === "block_8_merged") {
                 if (this._containsStadium) continue;
                 this._containsStadium = true;
-                fileTooLarge = file;
+                blockData = file;
                 break;
             }
             if (piece.indexOf(type) === -1) {
-                fileTooLarge = file;
+                blockData = file;
                 break;
             }
         }
-        return fileTooLarge;
+        return blockData;
     }
 
     /**
@@ -172,23 +185,23 @@ export class CityChunkTbl {
      * @param y Y 坐标
      * @returns 城市块对象
      */
-    private _getRandomChunk(x: number, y: number): THREE.Object3D {
+    private _genRandomChunk(x: number, y: number): THREE.Object3D {
         const matrix = new THREE.Matrix4();
         const matrixWorldInverse = new THREE.Matrix4().makeRotationY(Math.PI / 2);
-        const self = new THREE.Object3D();
-        self.name = "chunk";
+        const chunkIns = new THREE.Object3D();
+        chunkIns.name = "chunk";
 
         const block = this._getRandomBlockAt(x, y);
-        const defaultYPos = Math.round(4 * MiscFunc.random()) * (Math.PI / 2);
-        block.rotation.y = defaultYPos;
+        const randYRot = Math.round(4 * MiscFunc.random()) * (Math.PI / 2);
+        block.rotation.y = randYRot;
         block.position.set(0, 0, 0);
-        self.add(block);
-        (self as any).block = block;
+        chunkIns.add(block);
+        (chunkIns as any).block = block;
 
         const d: any[] = [];
         const result = MiscFunc.getRandElement(this.lanes).clone();
         result.position.set(-30, 0, 10);
-        self.add(result);
+        chunkIns.add(result);
         d.push(result);
 
         const object = MiscFunc.getRandElement(this.lanes).clone();
@@ -236,7 +249,7 @@ export class CityChunkTbl {
 
                 // 移除其他对象（只保留合并后的result）
                 d.forEach(obj => {
-                    if (obj !== result) self.remove(obj);
+                    if (obj !== result) chunkIns.remove(obj);
                 });
             } else {
                 console.error("Geometry merge failed");
@@ -248,10 +261,10 @@ export class CityChunkTbl {
 
         const r = MiscFunc.getRandElement(this.intersections).clone();
         r.position.set(-30, 0, 30);
-        self.add(r);
+        chunkIns.add(r);
 
         // 
-        // 车辆的云的数据，先不创建，走通流程之后再创建：
+        // 车辆和云的实例创建:
         /*
         d.forEach((index) => {
             const e = GVar.isMobile() ? 0.2 : 0.35;
@@ -262,15 +275,15 @@ export class CityChunkTbl {
                 this.mobs.push(tab);
             }
         });
-
+        */
         if (MiscFunc.random() > 0.65) {
-            const hex = this._random(this.cloudObjects).clone();
-            const b = new Buffer(this, hex);
-            self.add(b);
+            const cins : any = MiscFunc.getRandElement(this.cloudObjects).clone();
+            const b = new MobileCloud(this, cins);
+            chunkIns.add(b);
             this.mobs.push(b);
-        }*/
+        }
 
-        self.traverse((object) => {
+        chunkIns.traverse((object) => {
             if (object instanceof THREE.Mesh && object.material && object.material.pbr) {
                 object.material.defines.USE_FOG = true;
                 if (!(object instanceof Buffer)) {
@@ -281,7 +294,7 @@ export class CityChunkTbl {
             }
         });
 
-        return self;
+        return chunkIns;
     }
 
     /**
@@ -293,7 +306,7 @@ export class CityChunkTbl {
                 if (!this.chunks[x]) {
                     this.chunks[x] = [];
                 }
-                const chunkObj: any = this._getRandomChunk(x, y);
+                const chunkObj: any = this._genRandomChunk(x, y);
                 chunkObj.tableX = x;
                 chunkObj.tableY = y;
                 this.chunks[x][y] = { node: chunkObj, tableX: x, tableY: y };

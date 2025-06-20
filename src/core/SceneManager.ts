@@ -5,7 +5,7 @@ import { GVar } from '../utils/GVar';
 import { AppScene } from './AppScene';
 import { BinLoader } from '../loader/BinLoader';
 import { BlockLoaded } from '../loader/BlockLoader';
-import { CityChunkTbl } from './CityChunkTbl';
+import { CityChunkTbl, type ChunkData } from './CityChunkTbl';
 import { CameraController } from '../constrol/CameraController';
 import { InputMgr } from '../constrol/InputMgr';
 import { SceneMoveController } from '../constrol/SceneMoveController';
@@ -19,8 +19,6 @@ export class SceneManager {
     public renderer: Renderer;
     private objects: IObject[] = [];
     private clock: THREE.Clock;
-    private raycaster: THREE.Raycaster;
-    private mouse: THREE.Vector2;
 
     //
     //! 输出与相机控制类，与ChunkScene关联，从而场景可以无限循环：
@@ -95,9 +93,6 @@ export class SceneManager {
         // 初始化时钟
         this.clock = new THREE.Clock();
 
-        // 初始化射线投射器（用于后续交互）
-        this.raycaster = new THREE.Raycaster();
-        this.mouse = new THREE.Vector2();
 
         // 添加窗口大小调整监听
         window.addEventListener('resize', () => this.onWindowResize(container));
@@ -224,14 +219,14 @@ export class SceneManager {
     // 最核心的场景可视化函数：检测需要删除和重新安装的chunk数据，第一次初始化的时候，
     // remove的空，但会add上去一个新的结点,需要确认 v 是如何获取的，results
     protected refreshChunkScene(): void {
-        let $this = this;
-        this.chunkScene!.forEachChunk(function (results: any, xOffset: number, yOffset: number) {
-            var xcor = $this.gridCoords.x + xOffset;
-            var ycor = $this.gridCoords.y + yOffset;
-            var v = $this.cityChkTbl!.getChunkData(xcor, ycor);
+        
+        this.chunkScene!.forEachChunk(  (chunkContainer: any, xOffset: number, yOffset: number)=> {
+            var xcor = this.gridCoords.x + xOffset;
+            var ycor = this.gridCoords.y + yOffset;
+            var v : ChunkData | null = this.cityChkTbl!.getChunkData(xcor, ycor);
             if (!v) return;
-            results.remove(results.getObjectByName("chunk"));
-            results.add(v.node);
+            chunkContainer.remove(chunkContainer.getObjectByName("chunk"));
+            chunkContainer.add( v.node );
         });
     }
 
@@ -257,7 +252,8 @@ export class SceneManager {
     }
 
     public update(): void {
-        const delta = this.clock.getDelta();
+        const delta   : number = this.clock.getDelta();
+        const elapsed : number = this.clock.getElapsedTime();
 
         // 更新所有对象
         this.objects.forEach(obj => {
@@ -271,9 +267,9 @@ export class SceneManager {
         if (this.bInited)
             this.smController?.update();
 
-
-        // 更新射线投射器
-        this.raycaster.setFromCamera(this.mouse, this.cameraController.camera);
+        // 
+        // CityTable内可移动元素更新：
+        this.cityChkTbl?.update( { delta:delta,elapsed:elapsed } );
 
 
         // 渲染场景
