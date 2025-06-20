@@ -9,6 +9,7 @@ import { MiscFunc } from '../utils/MiscFunc';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MobileCloud } from '../objects/MobileCloud';
 import type { IUpdate } from '../interfaces/IUpdate';
+import MobileCar from '../objects/MobileCar';
 
 // 定义城市块数据结构
 export interface ChunkData {
@@ -264,18 +265,17 @@ export class CityChunkTbl {
         chunkIns.add(r);
 
         // 
-        // 车辆和云的实例创建:
-        /*
-        d.forEach((index) => {
+        // 车辆和云的实例创建:每一个Road都随机是否创小汽车:
+        d.forEach( (road) => {
             const e = GVar.isMobile() ? 0.2 : 0.35;
             if (MiscFunc.random() < e) {
-                const id = this._random(this.carObjects).clone();
-                const tab = new Tab(this, id, index);
-                self.add(tab);
-                this.mobs.push(tab);
+                const carObj = MiscFunc.getRandElement(this.carObjects).clone();
+                const carIns = new MobileCar(this, carObj, road);
+                chunkIns.add(carIns);
+                this.mobs.push(carIns);
             }
         });
-        */
+
         if (MiscFunc.random() > 0.65) {
             const cins : any = MiscFunc.getRandElement(this.cloudObjects).clone();
             const b = new MobileCloud(this, cins);
