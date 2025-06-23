@@ -26,7 +26,7 @@ export class InputMgr {
     }
     protected init(): void {
         window.addEventListener("mousedown", (evt: any) => {
-            if( evt.button != 2) return;
+            if( evt.button != 0) return;
             this.bIsDragging = true;
             var e = {
                 x: evt.pageX,

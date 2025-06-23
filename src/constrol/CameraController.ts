@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import CameraControls from 'camera-controls';
 
 export class CameraController {
     public camera: THREE.PerspectiveCamera;
-    public controls: OrbitControls;
+    public controls: OrbitControls | CameraControls;
     //private container : HTMLElement;
     public targetHeight: number = 140;
     private originalMinPolarAngle: number = 0;
@@ -12,9 +13,13 @@ export class CameraController {
     private readonly tolerance: number = 0.005;
     protected vec3CamTarget: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
+    protected bUseCC: boolean = false;
 
     constructor(container: HTMLElement) {
         //this.container = container;
+
+        if( this.bUseCC )
+            CameraControls.install({ THREE: THREE });
 
         // 创建相机
         this.camera = new THREE.PerspectiveCamera(
@@ -28,42 +33,42 @@ export class CameraController {
 
 
         // 创建轨道控制器
-        this.controls = new OrbitControls(this.camera, container);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        
-        /**
-         * 平移效果可以让Camera的lookTarget不再是0,0,0点，而是一直处于变化中.
-         * 在SceneMoveController中的raycast函数将使用lookTarget来计算整体的移动方向。
-         */
-        this.controls.enablePan = true;      
-        // 禁用缩放（鼠标滚轮）鼠标滚轮的效果由自己实现
-        this.controls.enableZoom = false;      
-        this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
+        if (this.bUseCC) {
+            this.controls = new CameraControls(this.camera, container);
+            let pa: number = this.controls.polarAngle;
+            this.controls.minPolarAngle = pa;
+            this.controls.maxPolarAngle = pa;
+            this.bPolarAdj = false;
+        }
+        else {
+            this.controls = new OrbitControls(this.camera, container);
+            this.controls.enableDamping = true;
+            this.controls.dampingFactor = 0.05;
+            /**
+             * 平移效果可以让Camera的lookTarget不再是0,0,0点，而是一直处于变化中.
+             * 在SceneMoveController中的raycast函数将使用lookTarget来计算整体的移动方向。
+             */
+            this.controls.enablePan = true;
+            // 禁用缩放（鼠标滚轮）鼠标滚轮的效果由自己实现
+            this.controls.enableZoom = false;
+            this.controls.screenSpacePanning = false; // 禁用屏幕空间平移
 
-        let pa: number = this.controls.getPolarAngle();
-        this.controls.minPolarAngle = pa;
-        this.controls.maxPolarAngle = pa;
-        this.bPolarAdj = false;
+            let pa: number = this.controls.getPolarAngle();
+            this.controls.minPolarAngle = pa;
+            this.controls.maxPolarAngle = pa;
+            this.bPolarAdj = false;
 
-        /*
-        let isResetting : boolean = false;
-        this.controls.addEventListener('change', () => {
-            if( isResetting ) return;
-            // 获取球面坐标的水平角度
-            let horizontalAngle : number = this.controls.getAzimuthalAngle();
-            console.log( "Get Hori rot:" + horizontalAngle );
-            isResetting = true;
-            try {
-                this.controls.reset();
-            } finally {
-                // 使用setTimeout确保在下一次事件循环前清除标志
-                setTimeout(() => {
-                    isResetting = false;
-                }, 0);
-            }
-        });*/
+        }
+    }
 
+
+    protected tmpVec3 : THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+    public getLookAtTarget(): THREE.Vector3 {
+        if( this.bUseCC ){
+            (this.controls as CameraControls).getTarget( this.tmpVec3 );
+            return this.tmpVec3;
+        }else
+            return (this.controls as OrbitControls).target;
     }
 
     public setCameraHeight(height: number): void {
@@ -85,7 +90,11 @@ export class CameraController {
 
     // 锁定垂直旋转
     private lockVerticalRotation(): void {
-        const currentAngle = this.controls.getPolarAngle();
+        let currentAngle : number = 0; 
+        if( this.bUseCC )
+            currentAngle = (this.controls as CameraControls) .polarAngle;
+        else
+            currentAngle = (this.controls as OrbitControls).getPolarAngle();
         this.controls.minPolarAngle = currentAngle;
         this.controls.maxPolarAngle = currentAngle;
         this.bPolarAdj = false;
@@ -114,8 +123,10 @@ export class CameraController {
             //console.log("New　Cammera Pos is:" + this.camera.position.y);
         }
 
-        this.controls.update();
-
+        if( this.bUseCC )
+            (this.controls as CameraControls).update( 0.01 );
+        else
+            (this.controls as OrbitControls).update();
 
     }
 
@@ -124,8 +135,19 @@ export class CameraController {
      * @returns 
      */
     public getRotationAngle(): number {
-        return this.controls.getAzimuthalAngle();
+        if( this.bUseCC )
+            return (this.controls as CameraControls).polarAngle;
+        else
+            return (this.controls as OrbitControls).getPolarAngle();
     }
+
+    public getAzimuthalAngle(): number {
+        if( this.bUseCC )
+            return (this.controls as CameraControls).azimuthAngle;
+        else
+            return (this.controls as OrbitControls).getAzimuthalAngle();
+    }
+
 
     public onWindowResize(container: HTMLElement): void {
         this.camera.aspect = container.clientWidth / container.clientHeight;

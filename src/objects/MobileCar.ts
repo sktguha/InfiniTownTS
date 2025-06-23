@@ -94,9 +94,9 @@ class MobileCar extends MobileObj {
                 this.stuck = false;
                 this.minSpeed = 0;
             }
-            (this.debugBox as THREE.BoxHelper).material.color.set(0xffff00);
+            this.setDebugBoxColor(0xffff00);
         } else {
-            (this.debugBox as THREE.BoxHelper).material.color.set(0xff0000);
+            this.setDebugBoxColor(0xff0000);
             this.speed -= _speed;
             this.speed = Math.max(this.speed, this.minSpeed);
             if (!this.stuck && this.speed === 0) {
@@ -106,6 +106,11 @@ class MobileCar extends MobileObj {
                 }, 2000);
             }
         }
+    }
+
+    public setDebugBoxColor( color: number ) : void{
+        if( this.debugBox )
+            (this.debugBox as THREE.BoxHelper).material.color.set( color );
     }
 
     private detectCar(obj: MobileCar): MobileCar | null {

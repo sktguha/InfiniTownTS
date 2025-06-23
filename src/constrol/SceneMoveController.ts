@@ -78,7 +78,7 @@ export class SceneMoveController {
 
     public raycast(): void {
         let castVec: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-        castVec.copy(this._camera?.controls.target!);
+        castVec.copy(this._camera!.getLookAtTarget() );
 
         // 
         // 加5的主要原因是：　如果不加的情况下，在某些情况下没有更新，

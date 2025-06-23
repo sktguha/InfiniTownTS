@@ -166,10 +166,31 @@ export class SceneManager {
 
                     // 初始化keyEvent:
                     this.initKeyEvent();
+
+                    // 处理点击效果：
+                    this.inputMgr.on( "startdrag", (evt: any) => {
+                        this.onMousePickCar(evt);
+                    });
                 }, 500);
             });
 
         });
+    }
+
+    protected onMousePickCar(evt: any): void {
+        // 找出Ray，并与场景的Mob物品做相交测试:
+        let raycaster = new THREE.Raycaster();
+        let tmpVec2 = new THREE.Vector2(evt.x, evt.y);
+
+        // WORK START: 此处的算法有问题，必须解决鼠标选取的逻辑：
+        raycaster.setFromCamera( tmpVec2, this.cameraController.camera);
+        var intersectors = raycaster.intersectObjects(this.chunkScene!.getPickables());
+        if (intersectors.length > 0) {
+            // 找到当前的模块与相邻模块上所有的小汽车,做相交测试:
+            const neighboringCars : Array<any> = this.cityChkTbl!.getNeighboringCars(this);
+            debugger;
+        }
+
     }
 
     /**
@@ -219,14 +240,14 @@ export class SceneManager {
     // 最核心的场景可视化函数：检测需要删除和重新安装的chunk数据，第一次初始化的时候，
     // remove的空，但会add上去一个新的结点,需要确认 v 是如何获取的，results
     protected refreshChunkScene(): void {
-        
-        this.chunkScene!.forEachChunk(  (chunkContainer: any, xOffset: number, yOffset: number)=> {
+
+        this.chunkScene!.forEachChunk((chunkContainer: any, xOffset: number, yOffset: number) => {
             var xcor = this.gridCoords.x + xOffset;
             var ycor = this.gridCoords.y + yOffset;
-            var v : ChunkData | null = this.cityChkTbl!.getChunkData(xcor, ycor);
+            var v: ChunkData | null = this.cityChkTbl!.getChunkData(xcor, ycor);
             if (!v) return;
             chunkContainer.remove(chunkContainer.getObjectByName("chunk"));
-            chunkContainer.add( v.node );
+            chunkContainer.add(v.node);
         });
     }
 
@@ -252,8 +273,8 @@ export class SceneManager {
     }
 
     public update(): void {
-        const delta   : number = this.clock.getDelta();
-        const elapsed : number = this.clock.getElapsedTime();
+        const delta: number = this.clock.getDelta();
+        const elapsed: number = this.clock.getElapsedTime();
 
         // 更新所有对象
         this.objects.forEach(obj => {
@@ -269,7 +290,7 @@ export class SceneManager {
 
         // 
         // CityTable内可移动元素更新：
-        this.cityChkTbl?.update( { delta:delta,elapsed:elapsed } );
+        this.cityChkTbl?.update({ delta: delta, elapsed: elapsed });
 
 
         // 渲染场景
