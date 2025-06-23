@@ -5,9 +5,11 @@ import * as THREE from 'three';
 import { MobileObj } from './MobileObj';
 import { MiscFunc } from '../utils/MiscFunc';
 import type { CityChunkTbl } from '../core/CityChunkTbl';
+import type { IUpdate } from '../interfaces/IUpdate';
+import { GVar } from '../utils/GVar';
 
 class MobileCar extends MobileObj {
-    private maxSpeed: number = 0.25;
+    private maxSpeed: number = 0.25 * 60;
     private minSpeed: number = 0;
     private speed: number = this.maxSpeed;
     private stuck: boolean = false;
@@ -16,10 +18,17 @@ class MobileCar extends MobileObj {
     private direction: THREE.Vector3 | null = null;
     private collisionPoints: THREE.Vector3[] = [];
     private detectedCar: MobileCar | null = null;
+    private meshObj : THREE.Object3D | null = null; 
+
+    protected debugBox: any = null;
 
     constructor(table: CityChunkTbl, obj: THREE.Object3D, road: THREE.Object3D) {
         super(table);
         this.name = "car";
+        this.meshObj = obj;
+        if( this._isLargeVehicle() )
+            this.radarRadius = this.radarRadius*1.2;
+        const box = new THREE.Box3().setFromObject(obj);
         this.add(obj);
         this.position.copy(road.position);
         const point = new THREE.Vector3(3.4, 0, 0);
@@ -34,11 +43,19 @@ class MobileCar extends MobileObj {
         this.direction = new THREE.Vector3();
         obj.getWorldDirection(this.direction).negate();
         this.direction.set(Math.round(this.direction.x), Math.round(this.direction.y), Math.round(this.direction.z));
-        this._initCollisionPoints();
+        this._initCollisionPoints(box);
+
+        // 创建Box3Helper（自动生成线框）
+        if (GVar.bVisDebug) {
+            const boxHelper = new THREE.Box3Helper(box, 0xffff00); // 参数：Box3实例 + 颜色
+            obj.add(boxHelper);
+            this.debugBox = boxHelper;
+
+        }
+
     }
 
-    private _initCollisionPoints(): void {
-        const box = new THREE.Box3().setFromObject(this.children[0]);
+    private _initCollisionPoints(box: THREE.Box3): void {
         const min = box.min.clone();
         const max = box.max.clone();
         this.worldToLocal(min);
@@ -56,8 +73,8 @@ class MobileCar extends MobileObj {
     }
 
     public detectCars(_data: MobileCar[]): void {
-        const _speed = 0.0075;
-        let n : boolean = true;
+        const _speed = 0.0075 * 60;
+        let n: boolean = true;
         this.detectedCar = null;
         for (const car of _data) {
             const detected = this.detectCar(car);
@@ -73,11 +90,13 @@ class MobileCar extends MobileObj {
                 this.speed = Math.min(this.speed, this.maxSpeed);
             }
             if (this.stuck) {
-                clearTimeout( this.restartTimer! );
+                clearTimeout(this.restartTimer!);
                 this.stuck = false;
                 this.minSpeed = 0;
             }
+            (this.debugBox as THREE.BoxHelper).material.color.set(0xffff00);
         } else {
+            (this.debugBox as THREE.BoxHelper).material.color.set(0xff0000);
             this.speed -= _speed;
             this.speed = Math.max(this.speed, this.minSpeed);
             if (!this.stuck && this.speed === 0) {
@@ -100,7 +119,7 @@ class MobileCar extends MobileObj {
         const v1 = this.direction!.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 4);
         const startGround = new THREE.Vector3();
 
-        const curChunk : any = this.parent;
+        const curChunk: any = this.parent;
         this.getTablePosition(this.position, curChunk.tableX, curChunk.tableY, startGround);
         for (const pos of obj.collisionPoints) {
             const orig = pos.clone().applyMatrix4(obj.matrix);
@@ -121,8 +140,8 @@ class MobileCar extends MobileObj {
     /**
      *　移动更新:
      */
-    public update(): void {
-        const value = this.direction!.clone().multiplyScalar(this.speed);
+    public update(ud: IUpdate): void {
+        const value = this.direction!.clone().multiplyScalar(this.speed * ud.delta);
         this.position.add(value);
         MiscFunc.roundVector(this.position, 2);
         this._updateTablePosition();
@@ -137,6 +156,13 @@ class MobileCar extends MobileObj {
     private isOnIntersection(): boolean {
         return this.position.x < -20 && this.position.x > -40 && this.position.z < -20 && this.position.z > -40;
     }
+
+    protected _isLargeVehicle(): boolean {
+        let mesh : any  = this.meshObj;
+        return mesh.name.indexOf("Bus") !== -1 || 
+            mesh.name.indexOf("Container") !== -1 || mesh.name.indexOf("Truck") !== -1;
+    }
+
 }
 
 export default MobileCar;

@@ -28,7 +28,8 @@ export class MobileCloud extends MobileObj {
 
         this.delay = 5 * MiscFunc.random();
         this.speedModifier = 0.25 * MiscFunc.random() + 1;
-        this.moveSpeed = 0.05 * this.speedModifier;
+        // *60是为了把移动以时间为基础，而不是以帧速为基础:
+        this.moveSpeed = 0.05 * this.speedModifier * 60;
         this.maxScalar = this.scale.x + this.scale.x * 0.05;
         this.minScalar = this.scale.x - this.scale.x * 0.05;
         this.rotation.y = 0.25;
@@ -48,7 +49,7 @@ export class MobileCloud extends MobileObj {
         );
         this.scale.setScalar(this.minScalar + (this.maxScalar - this.minScalar) * n);
 
-        const value = this.direction.clone().multiplyScalar(this.moveSpeed);
+        const value = this.direction.clone().multiplyScalar(this.moveSpeed * ud.delta);
         this.position.add(value);
 
         this._updateTablePosition();
