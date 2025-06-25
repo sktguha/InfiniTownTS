@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import CameraControls from 'camera-controls';
+import TWEEN from 'three/examples/jsm/libs/tween.module.js'
+import type { MobileCar } from '../objects/MobileCar';
 
 export class CameraController {
     public camera: THREE.PerspectiveCamera;
@@ -15,10 +17,11 @@ export class CameraController {
 
     protected bUseCC: boolean = false;
 
+
     constructor(container: HTMLElement) {
         //this.container = container;
 
-        if( this.bUseCC )
+        if (this.bUseCC)
             CameraControls.install({ THREE: THREE });
 
         // 创建相机
@@ -61,13 +64,72 @@ export class CameraController {
         }
     }
 
+    /**
+     * 使相机绕物体旋转到其前方（沿物体前进方向）
+     * @param object - 目标物体
+     * @param controls - OrbitControls 实例
+     * @param camera - 相机
+     * @param distance - 相机与物体的距离（默认 10）
+     */
+    public lookAtFront(object: THREE.Object3D ) {
+        
+        let controls : OrbitControls = this.controls  as OrbitControls;
+        let camera : THREE.Camera = this.camera;
+        // 禁用 OrbitControls 以避免动画冲突
+        controls.enabled = false;
 
-    protected tmpVec3 : THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+        let distance : number = this.camera.position.distanceTo( controls.target );
+
+        // 获取当前相机角度
+        const currentTheta = controls.getAzimuthalAngle();
+        const currentPhi = controls.getPolarAngle();
+        const currentDistance = camera.position.distanceTo(controls.target);
+
+        // 获取物体前进方向
+        const objectForward = new THREE.Vector3();
+        (object as MobileCar).getDirection(objectForward);
+
+        // 计算目标角度
+        const desiredTheta = Math.atan2(objectForward.x, objectForward.z);
+        const desiredPhi = Math.acos(Math.max(-1, Math.min(1, objectForward.y)));
+
+        // 规范化方位角差到 [-π, π]
+        let deltaTheta = desiredTheta - currentTheta;
+        if (deltaTheta > Math.PI) deltaTheta -= 2 * Math.PI;
+        if (deltaTheta < -Math.PI) deltaTheta += 2 * Math.PI;
+
+        // 创建 Tween 动画对象
+        const tweenObject = { theta: currentTheta, phi: currentPhi, distance: currentDistance };
+
+        // 设置 Tween 动画
+        new TWEEN.Tween(tweenObject)
+            .to({ theta: currentTheta + deltaTheta, phi: desiredPhi, distance }, 1000)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => {
+                // 计算球面坐标到笛卡尔坐标
+                const x = distance * Math.sin(tweenObject.phi) * Math.sin(tweenObject.theta);
+                const y = distance * Math.cos(tweenObject.phi);
+                const z = distance * Math.sin(tweenObject.phi) * Math.cos(tweenObject.theta);
+
+                // 设置相机位置
+                camera.position.copy(controls.target).add(new THREE.Vector3(x, y, z));
+                camera.lookAt(controls.target);
+            })
+            .onComplete(() => {
+                // 动画完成后重新启用 OrbitControls
+                controls.enabled = true;
+                controls.update();
+            })
+            .start();
+    }
+
+
+    protected tmpVec3: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
     public getLookAtTarget(): THREE.Vector3 {
-        if( this.bUseCC ){
-            (this.controls as CameraControls).getTarget( this.tmpVec3 );
+        if (this.bUseCC) {
+            (this.controls as CameraControls).getTarget(this.tmpVec3);
             return this.tmpVec3;
-        }else
+        } else
             return (this.controls as OrbitControls).target;
     }
 
@@ -90,9 +152,9 @@ export class CameraController {
 
     // 锁定垂直旋转
     private lockVerticalRotation(): void {
-        let currentAngle : number = 0; 
-        if( this.bUseCC )
-            currentAngle = (this.controls as CameraControls) .polarAngle;
+        let currentAngle: number = 0;
+        if (this.bUseCC)
+            currentAngle = (this.controls as CameraControls).polarAngle;
         else
             currentAngle = (this.controls as OrbitControls).getPolarAngle();
         this.controls.minPolarAngle = currentAngle;
@@ -111,6 +173,8 @@ export class CameraController {
 
     public update(): void {
 
+        TWEEN.update();
+
         // 允许垂直旋转：恢复默认角度范围
         if (this.bPolarAdj) {
             this.camera.position.y += .05 * (this.targetHeight - this.camera.position.y);
@@ -123,8 +187,8 @@ export class CameraController {
             //console.log("New　Cammera Pos is:" + this.camera.position.y);
         }
 
-        if( this.bUseCC )
-            (this.controls as CameraControls).update( 0.01 );
+        if (this.bUseCC)
+            (this.controls as CameraControls).update(0.01);
         else
             (this.controls as OrbitControls).update();
 
@@ -135,14 +199,14 @@ export class CameraController {
      * @returns 
      */
     public getRotationAngle(): number {
-        if( this.bUseCC )
+        if (this.bUseCC)
             return (this.controls as CameraControls).polarAngle;
         else
             return (this.controls as OrbitControls).getPolarAngle();
     }
 
     public getAzimuthalAngle(): number {
-        if( this.bUseCC )
+        if (this.bUseCC)
             return (this.controls as CameraControls).azimuthAngle;
         else
             return (this.controls as OrbitControls).getAzimuthalAngle();

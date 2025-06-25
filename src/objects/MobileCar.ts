@@ -69,6 +69,14 @@ export class MobileCar extends MobileObj {
         return this.colBox!;
     }
 
+    /**
+     * WORK START: 检查为什么这个Direction与worldDirection并不一致.
+     * @param dir 
+     */
+    public getDirection( dir : THREE.Vector3 ) : void{
+        dir.copy( this.direction! );
+    }
+
     private _initCollisionPoints(box: THREE.Box3): void {
         const min = box.min.clone();
         const max = box.max.clone();

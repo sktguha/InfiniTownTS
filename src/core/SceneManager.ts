@@ -13,7 +13,7 @@ import { EventMgr } from '../utils/EventMgr';
 import { LightProbeLoader } from '../loader/LightProbeLoader';
 import { EXRLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { MobileCar } from '../objects/MobileCar';
-import TWEEN from 'three/examples/jsm/libs/tween.module.js'
+//import TWEEN from 'three/examples/jsm/libs/tween.module.js'
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -348,7 +348,6 @@ export class SceneManager {
         const delta: number = this.clock.getDelta();
         const elapsed: number = this.clock.getElapsedTime();
 
-        TWEEN.update();
 
         // 更新所有对象
         this.objects.forEach(obj => {
@@ -383,12 +382,7 @@ export class SceneManager {
     protected initKeyEvent(): void {
         window.addEventListener("keydown", (event) => {
             if (event.key === 'z') {
-                this.mTw = new TWEEN.Tween((this.cameraController.controls as OrbitControls).target) // 起始值
-                    .to({ x: 5, z: 5 }, 800) // 结束值和动画时间（毫秒）
-                    .onUpdate(() => {
-                        (this.cameraController.controls as OrbitControls).update();
-                    });
-                this.mTw.start();
+                this.cameraController.lookAtFront( this.followMobile as MobileCar );
             }
         });
     }
