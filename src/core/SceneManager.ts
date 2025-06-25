@@ -39,6 +39,8 @@ export class SceneManager {
     protected envLightProbe: LightProbeLoader = LightProbeLoader.getins();
     protected dirLight: THREE.DirectionalLight | null = null;
 
+    protected resizeHandler: any = null;
+
     // 是否初始化:
     protected bInited: boolean = false;
     //! 记录上一次中心位置，减少无效处理:
@@ -95,7 +97,8 @@ export class SceneManager {
 
 
         // 添加窗口大小调整监听
-        window.addEventListener('resize', () => this.onWindowResize(container));
+        this.resizeHandler = () => this.onWindowResize(container);
+        window.addEventListener('resize', this.resizeHandler );
 
 
         let asce: AppScene = new AppScene();
@@ -227,15 +230,14 @@ export class SceneManager {
                             let offset : THREE.Vector3 = this.cameraController.camera!.position.clone().sub(orbit.target);
                             car.getWorldPosition( wpos );
 
-                            this.mTw = new TWEEN.Tween(orbit.target) // 起始值
+                            /*this.mTw = */new TWEEN.Tween(orbit.target) // 起始值
                                 .to({ x: wpos.x, z: wpos.z }, 800) // 结束值和动画时间（毫秒）
                                 .onUpdate( ()=>{
                                     orbit.update();
                                     const newPos : THREE.Vector3 = orbit.target.clone().add(offset);
                                     this.cameraController.camera!.position.copy(newPos);
-                                });
-                            console.log( "The Tween to Pos:" + wpos.x + "," + wpos.z );    
-                            this.mTw.start();
+                                }).start();
+                            //this.mTw.start();
                         }
                     }
                 }
@@ -390,9 +392,9 @@ export class SceneManager {
         this.removeAllObjects();
         this.renderer.dispose();
 
-        // 移除事件监听器
-        // ATTENTION TO FIX:
-        //window.removeEventListener('resize', this.onWindowResize);
+        // 
+        // 移除事件监听：
+        window.removeEventListener( 'resize',this.resizeHandler );
         this.renderer.renderer.domElement.removeEventListener('mousemove', () => { });
     }
 }
