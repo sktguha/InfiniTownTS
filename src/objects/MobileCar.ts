@@ -163,7 +163,6 @@ export class MobileCar extends MobileObj {
      *　移动更新:
      */
     public update(ud: IUpdate): void {
-        return;
         const value = this.direction!.clone().multiplyScalar(this.speed * ud.delta);
         this.position.add(value);
         MiscFunc.roundVector(this.position, 2);

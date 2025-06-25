@@ -47,6 +47,10 @@ export class SceneManager {
     protected iLastCx: number = -100000000;
     protected iLastCy: number = -100000000;
 
+    //! 跟随物品:
+    protected followMobile: MobileCar | null = null;
+    protected lerpVal : number = 0.01;
+
     constructor(container: HTMLElement) {
 
         // 创建场景
@@ -98,7 +102,7 @@ export class SceneManager {
 
         // 添加窗口大小调整监听
         this.resizeHandler = () => this.onWindowResize(container);
-        window.addEventListener('resize', this.resizeHandler );
+        window.addEventListener('resize', this.resizeHandler);
 
 
         let asce: AppScene = new AppScene();
@@ -221,29 +225,27 @@ export class SceneManager {
                         if (intersectors[ti].object.parent && (intersectors[ti].object.parent?.userData['type'] == "mobileCar")) {
                             let car: MobileCar = intersectors[ti].object.parent as MobileCar;
                             car.setDebugBoxColor(0xff00ff, true);
-                            //(this.cameraController.controls as OrbitControls).target.copy(car.position);
-                            // 创建 Tween 对象
-                            // 
-                            // WORK START: 处理好TWEEN对象.
-                            let wpos : THREE.Vector3 = new THREE.Vector3();
-                            let orbit : OrbitControls = this.cameraController.controls as OrbitControls;
-                            let offset : THREE.Vector3 = this.cameraController.camera!.position.clone().sub(orbit.target);
-                            car.getWorldPosition( wpos );
-
-                            /*this.mTw = */new TWEEN.Tween(orbit.target) // 起始值
-                                .to({ x: wpos.x, z: wpos.z }, 800) // 结束值和动画时间（毫秒）
-                                .onUpdate( ()=>{
-                                    orbit.update();
-                                    const newPos : THREE.Vector3 = orbit.target.clone().add(offset);
-                                    this.cameraController.camera!.position.copy(newPos);
-                                }).start();
-                            //this.mTw.start();
+                            this.followMobile = car;
                         }
                     }
                 }
             }
         }
 
+    }
+
+    protected updateFollow(): void {
+        if (!this.followMobile) return;
+
+        let wpos: THREE.Vector3 = new THREE.Vector3();
+        let orbit: OrbitControls = this.cameraController.controls as OrbitControls;
+        let offset: THREE.Vector3 = this.cameraController.camera!.position.clone().sub(orbit.target);
+        this.followMobile.getWorldPosition(wpos);
+
+        //orbit.target.copy(wpos);
+        orbit.target.lerp( wpos,this.lerpVal );
+        const newPos: THREE.Vector3 = orbit.target.clone().add(offset);
+        this.cameraController.camera!.position.copy(newPos);
     }
 
     /**
@@ -353,6 +355,9 @@ export class SceneManager {
             obj.update(delta);
         });
 
+        // 更新相机跟限：
+        this.updateFollow();
+
         // 更新相机控制器
         this.cameraController.update();
 
@@ -394,7 +399,7 @@ export class SceneManager {
 
         // 
         // 移除事件监听：
-        window.removeEventListener( 'resize',this.resizeHandler );
+        window.removeEventListener('resize', this.resizeHandler);
         this.renderer.renderer.domElement.removeEventListener('mousemove', () => { });
     }
 }
@@ -418,3 +423,28 @@ this.scene.add(cube);
 let tmesh : any = arrBlocks[0];
 tmesh.position.set(0, 0, 0);
 this.scene.add(tmesh);*/
+
+
+
+ //(this.cameraController.controls as OrbitControls).target.copy(car.position);
+ // 创建 Tween 对象
+ // 
+ // WORK START: 处理好TWEEN对象.
+ /*
+ let wpos: THREE.Vector3 = new THREE.Vector3();
+ let orbit: OrbitControls = this.cameraController.controls as OrbitControls;
+ let offset: THREE.Vector3 = this.cameraController.camera!.position.clone().sub(orbit.target);
+ car.getWorldPosition(wpos);*/
+ /*
+ new TWEEN.Tween(orbit.target) // 起始值
+     .to({ x: wpos.x, z: wpos.z }, 800) // 结束值和动画时间（毫秒）
+     .onUpdate( ()=>{
+         orbit.update();
+         const newPos : THREE.Vector3 = orbit.target.clone().add(offset);
+         this.cameraController.camera!.position.copy(newPos);
+     }).start();
+ this.followMobile = car;
+ orbit.target.lerp( wpos,this.lerpVal );
+ const newPos: THREE.Vector3 = orbit.target.clone().add(offset);
+ this.cameraController.camera!.position.copy(newPos);
+ */
