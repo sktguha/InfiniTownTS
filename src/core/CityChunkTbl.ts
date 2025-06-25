@@ -9,7 +9,7 @@ import { MiscFunc } from '../utils/MiscFunc';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MobileCloud } from '../objects/MobileCloud';
 import type { IUpdate } from '../interfaces/IUpdate';
-import MobileCar from '../objects/MobileCar';
+import {MobileCar} from '../objects/MobileCar';
 
 // 定义城市块数据结构
 export interface ChunkData {
@@ -269,7 +269,12 @@ export class CityChunkTbl {
         d.forEach( (road) => {
             const e = GVar.isMobile() ? 0.2 : 0.35;
             if (MiscFunc.random() < e) {
-                const carObj = MiscFunc.getRandElement(this.carObjects).clone();
+                // 测试是否影响点击测试：
+                let  rawCar : any = MiscFunc.getRandElement(this.carObjects); 
+                const carObj = rawCar.clone();
+                carObj.geometry = rawCar.geometry.clone();
+                carObj.material = rawCar.material.clone();
+
                 const carIns = new MobileCar(this, carObj, road);
                 chunkIns.add(carIns);
                 this.mobs.push(carIns);

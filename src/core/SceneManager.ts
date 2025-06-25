@@ -11,7 +11,9 @@ import { InputMgr } from '../constrol/InputMgr';
 import { SceneMoveController } from '../constrol/SceneMoveController';
 import { EventMgr } from '../utils/EventMgr';
 import { LightProbeLoader } from '../loader/LightProbeLoader';
-import { EXRLoader } from 'three/examples/jsm/Addons.js';
+import { EXRLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
+import { MobileCar } from '../objects/MobileCar';
+import TWEEN from 'three/examples/jsm/libs/tween.module.js'
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -28,8 +30,6 @@ export class SceneManager {
     protected cityChkTbl: CityChunkTbl | null = null;
     // ChunkScene场景核心组织类：
     protected chunkScene: AppScene | null = null;
-    // 
-    protected mPivot: any | null = null;
 
     // 
     // 网格坐标,无限循环场景的核心算法类：
@@ -120,11 +120,6 @@ export class SceneManager {
                 this.chunkScene = new AppScene();
                 this.chunkScene.initChunks();
                 this.scene.add(this.chunkScene);
-                // 如果从相机的角度来处理的话，不需要Pivot这个中间数据了.
-                /* const pivot = new THREE.Group();
-                pivot.add(this.chunkScene);
-                this.scene.add(pivot);
-                this.mPivot = pivot; */
 
 
                 // 初始化方向光：
@@ -144,12 +139,7 @@ export class SceneManager {
                     this.refreshChunkScene();
                     // 响应chunkMove的消息处理与刷新：
                     EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
-                        // 
-                        // 数值相同的情况下，不做任何处理直接返回：WORK START:测试本段代码，查看问题:
-                        //if (xoff == this.iLastCx || this.iLastCy == yoff) {
-                        //    return;
-                        //}
-                        //console.log( '对应的ChunkMove数据:' + xoff + ',' + yoff );
+
                         this.iLastCx = xoff;
                         this.iLastCy = yoff;
                         this.gridCoords.x += xoff;
@@ -168,7 +158,7 @@ export class SceneManager {
                     this.initKeyEvent();
 
                     // 处理点击效果：
-                    this.inputMgr.on( "startdrag", (evt: any) => {
+                    this.inputMgr.on("startdrag", (evt: any) => {
                         this.onMousePickCar(evt);
                     });
                 }, 500);
@@ -176,19 +166,80 @@ export class SceneManager {
 
         });
     }
+    protected mTw: any = null;
 
+    /**
+     * 处理鼠标选择场景内物品:
+     * @param evt 
+     */
     protected onMousePickCar(evt: any): void {
         // 找出Ray，并与场景的Mob物品做相交测试:
         let raycaster = new THREE.Raycaster();
-        let tmpVec2 = new THREE.Vector2(evt.x, evt.y);
+        // 将鼠标点击位置转换为 WebGL 坐标系 (-1 到 1)
+        let tmpVec2 = new THREE.Vector2((evt.x / GVar.gWidth) * 2 - 1, -(evt.y / GVar.gHeight) * 2 + 1);
 
         // WORK START: 此处的算法有问题，必须解决鼠标选取的逻辑：
-        raycaster.setFromCamera( tmpVec2, this.cameraController.camera);
+        raycaster.setFromCamera(tmpVec2, this.cameraController.camera);
+
         var intersectors = raycaster.intersectObjects(this.chunkScene!.getPickables());
         if (intersectors.length > 0) {
-            // 找到当前的模块与相邻模块上所有的小汽车,做相交测试:
-            const neighboringCars : Array<any> = this.cityChkTbl!.getNeighboringCars(this);
-            debugger;
+            let insectObj = intersectors[0].object;
+
+            // 
+            // 是否显示调试信息:
+            if (GVar.bVisDebug) {
+                let arr: Array<any> = this.chunkScene!.getPickables();
+                for (let ti: number = 0; ti < arr.length; ti++)
+                    arr[ti].visible = false;
+                insectObj.visible = true;
+            }
+
+            let cx: number = (insectObj as any).userData["centeredX"];
+            let cy: number = (insectObj as any).userData["centeredY"];
+
+            let ckContainer: any = this.chunkScene?.getChunkContainer(cx, cy);
+            let chunkIns: any = ckContainer.getObjectByName("chunk");
+
+            if (chunkIns && chunkIns.children.length > 0) {
+                // 找到当前的模块与相邻模块上所有的小汽车,做相交测试:
+                const neighboringCars: Array<MobileCar> = this.cityChkTbl!.getNeighboringCars(chunkIns.children[0]);
+
+                // 所有的碰撞Car切换颜色：
+                let meshArr: Array<any> = [];
+                for (let ti: number = 0; ti < neighboringCars.length; ti++) {
+                    neighboringCars[ti].setDebugBoxColor(0x00ff33, true);
+                    meshArr.push(neighboringCars[ti].getMeshObj());
+                }
+                tmpVec2 = new THREE.Vector2((evt.x / GVar.gWidth) * 2 - 1, -(evt.y / GVar.gHeight) * 2 + 1);
+                raycaster.setFromCamera(tmpVec2, this.cameraController.camera);
+                intersectors = raycaster.intersectObjects(meshArr, true);
+                if (intersectors.length > 0) {
+                    for (let ti: number = 0; ti < intersectors.length; ti++) {
+                        if (intersectors[ti].object.parent && (intersectors[ti].object.parent?.userData['type'] == "mobileCar")) {
+                            let car: MobileCar = intersectors[ti].object.parent as MobileCar;
+                            car.setDebugBoxColor(0xff00ff, true);
+                            //(this.cameraController.controls as OrbitControls).target.copy(car.position);
+                            // 创建 Tween 对象
+                            // 
+                            // WORK START: 处理好TWEEN对象.
+                            let wpos : THREE.Vector3 = new THREE.Vector3();
+                            let orbit : OrbitControls = this.cameraController.controls as OrbitControls;
+                            let offset : THREE.Vector3 = this.cameraController.camera!.position.clone().sub(orbit.target);
+                            car.getWorldPosition( wpos );
+
+                            this.mTw = new TWEEN.Tween(orbit.target) // 起始值
+                                .to({ x: wpos.x, z: wpos.z }, 800) // 结束值和动画时间（毫秒）
+                                .onUpdate( ()=>{
+                                    orbit.update();
+                                    const newPos : THREE.Vector3 = orbit.target.clone().add(offset);
+                                    this.cameraController.camera!.position.copy(newPos);
+                                });
+                            console.log( "The Tween to Pos:" + wpos.x + "," + wpos.z );    
+                            this.mTw.start();
+                        }
+                    }
+                }
+            }
         }
 
     }
@@ -251,6 +302,23 @@ export class SceneManager {
         });
     }
 
+    /**
+     * 从碰撞Mesh获取对应的ChunkInstances.
+     * @param x 
+     * @param y 
+     * @returns 
+     */
+    public getChunkInsFromColMesh(x: number, y: number): any {
+        let chunkIns: any = null;
+        this.chunkScene!.forEachChunk((chunkContainer: any, xOffset: number, yOffset: number) => {
+            if (x != xOffset && y != yOffset)
+                return;
+            chunkIns = chunkContainer.getObjectByName("chunk");
+        });
+
+        return chunkIns;
+    }
+
     public addObject(object: IObject): void {
         this.objects.push(object);
         this.scene.add(object.mesh);
@@ -275,6 +343,8 @@ export class SceneManager {
     public update(): void {
         const delta: number = this.clock.getDelta();
         const elapsed: number = this.clock.getElapsedTime();
+
+        TWEEN.update();
 
         // 更新所有对象
         this.objects.forEach(obj => {
@@ -306,8 +376,12 @@ export class SceneManager {
     protected initKeyEvent(): void {
         window.addEventListener("keydown", (event) => {
             if (event.key === 'z') {
-                this.mRotY = this.mRotY + Math.PI / 72;
-                (this.mPivot as THREE.Group)!.rotateY(Math.PI / 72);
+                this.mTw = new TWEEN.Tween((this.cameraController.controls as OrbitControls).target) // 起始值
+                    .to({ x: 5, z: 5 }, 800) // 结束值和动画时间（毫秒）
+                    .onUpdate(() => {
+                        (this.cameraController.controls as OrbitControls).update();
+                    });
+                this.mTw.start();
             }
         });
     }

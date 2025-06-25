@@ -8,7 +8,7 @@ import type { CityChunkTbl } from '../core/CityChunkTbl';
 import type { IUpdate } from '../interfaces/IUpdate';
 import { GVar } from '../utils/GVar';
 
-class MobileCar extends MobileObj {
+export class MobileCar extends MobileObj {
     private maxSpeed: number = 0.25 * 60;
     private minSpeed: number = 0;
     private speed: number = this.maxSpeed;
@@ -20,11 +20,17 @@ class MobileCar extends MobileObj {
     private detectedCar: MobileCar | null = null;
     private meshObj : THREE.Object3D | null = null; 
 
+    private colBox : THREE.Box3 | null = null;  
+
     protected debugBox: any = null;
 
     constructor(table: CityChunkTbl, obj: THREE.Object3D, road: THREE.Object3D) {
         super(table);
         this.name = "car";
+        this.userData['type'] = "mobileCar";
+        (obj as THREE.Mesh).geometry.computeBoundingSphere();
+        (obj as THREE.Mesh).geometry.computeBoundingBox();
+
         this.meshObj = obj;
         if( this._isLargeVehicle() )
             this.radarRadius = this.radarRadius*1.2;
@@ -45,6 +51,7 @@ class MobileCar extends MobileObj {
         this.direction.set(Math.round(this.direction.x), Math.round(this.direction.y), Math.round(this.direction.z));
         this._initCollisionPoints(box);
 
+        this.colBox = box;
         // 创建Box3Helper（自动生成线框）
         if (GVar.bVisDebug) {
             const boxHelper = new THREE.Box3Helper(box, 0xffff00); // 参数：Box3实例 + 颜色
@@ -52,7 +59,14 @@ class MobileCar extends MobileObj {
             this.debugBox = boxHelper;
 
         }
+    }
 
+    public getMeshObj() : any{
+        return this.meshObj;
+    }
+
+    public getBoxObj() : THREE.Box3{
+        return this.colBox!;
     }
 
     private _initCollisionPoints(box: THREE.Box3): void {
@@ -108,7 +122,10 @@ class MobileCar extends MobileObj {
         }
     }
 
-    public setDebugBoxColor( color: number ) : void{
+    protected bColorForceKeep : boolean = false;
+    public setDebugBoxColor( color: number,forceKeep : boolean = false ) : void{
+        if( this.bColorForceKeep && !forceKeep ) return;
+        this.bColorForceKeep = forceKeep;
         if( this.debugBox )
             (this.debugBox as THREE.BoxHelper).material.color.set( color );
     }
@@ -146,6 +163,7 @@ class MobileCar extends MobileObj {
      *　移动更新:
      */
     public update(ud: IUpdate): void {
+        return;
         const value = this.direction!.clone().multiplyScalar(this.speed * ud.delta);
         this.position.add(value);
         MiscFunc.roundVector(this.position, 2);
@@ -169,5 +187,3 @@ class MobileCar extends MobileObj {
     }
 
 }
-
-export default MobileCar;

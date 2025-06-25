@@ -91,12 +91,13 @@ export class SceneMoveController {
 
             // 
             // 是否显示调试信息:
+            /*
             if (GVar.bVisDebug) {
                 let arr: Array<any> = this._scene!.getPickables();
                 for (let ti: number = 0; ti < arr.length; ti++)
                     arr[ti].visible = false;
                 insectObj.visible = true;
-            }
+            }*/
 
             let cx: number = (insectObj as any).userData["centeredX"];
             let cy: number = (insectObj as any).userData["centeredY"];

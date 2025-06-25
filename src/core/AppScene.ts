@@ -66,6 +66,18 @@ export class AppScene extends THREE.Scene {
         return chunkInsContainer;
     }
 
+    public getChunkContainer(cx: number, cz: number): any {
+        for (let z: number = 0; z < GVar.CHUNK_COUNT; z++) {
+            for (let x: number = 0; x < GVar.CHUNK_COUNT; x++) {
+                let cc : any = this.arrChunkContainer[x][z];
+                if( cc.userData["centeredX"] == cx && cc.userData["centeredY"] == cz  ) 
+                    return cc;
+            }
+        }
+        
+        return null;
+    }
+
 
     /**
      * 初始化当前AppScene内所有的ChunkInstance.
@@ -98,10 +110,10 @@ export class AppScene extends THREE.Scene {
      * @param cb 
      */
     public forEachChunk(cb: (chunkContainer: THREE.Object3D, centX: number, centY: number) => void): void {
-        
-        for (var x : number = 0; x < GVar.CHUNK_COUNT; x++) {
-            for (var y : number = 0; y < GVar.CHUNK_COUNT; y++) {
-                let v : THREE.Object3D = this.arrChunkContainer[x][y];
+
+        for (var x: number = 0; x < GVar.CHUNK_COUNT; x++) {
+            for (var y: number = 0; y < GVar.CHUNK_COUNT; y++) {
+                let v: THREE.Object3D = this.arrChunkContainer[x][y];
                 cb(v, v.userData["centeredX"], v.userData["centeredY"]);
             }
         }

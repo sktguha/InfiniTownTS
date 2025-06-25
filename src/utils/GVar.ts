@@ -67,4 +67,10 @@ export class GVar {
     // 是否显示相关的调试信息:
     public static bVisDebug : boolean = true;
 
+    //! 屏幕宽高和像素比:
+    public static gWidth : number = window.innerWidth;
+    public static gHeight : number = window.innerHeight;
+    public static gRation : number = window.devicePixelRatio;
+
+
 }
