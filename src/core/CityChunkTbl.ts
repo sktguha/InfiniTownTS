@@ -272,8 +272,10 @@ export class CityChunkTbl {
                 // 测试是否影响点击测试：
                 let  rawCar : any = MiscFunc.getRandElement(this.carObjects); 
                 const carObj = rawCar.clone();
-                carObj.geometry = rawCar.geometry.clone();
-                carObj.material = rawCar.material.clone();
+                // 
+                // ATTENTION TO FIX: 下面的代码，并不会影响点击测试:
+                //carObj.geometry = rawCar.geometry.clone();
+                //carObj.material = rawCar.material.clone();
 
                 const carIns = new MobileCar(this, carObj, road);
                 chunkIns.add(carIns);

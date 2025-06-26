@@ -30,18 +30,6 @@ export class BlockLoaded {
                 console.log("所有的几何体加载完成...");
                 if (cb)
                     cb(this.objMainJson);
-
-                // TEST CODE TO DELETE:
-                let obj: any = this.objMainJson;
-                let arrBlocks: Array<any> = obj.getObjectByName("blocks").children;
-                let arrLanes: Array<any> = obj.getObjectByName("lanes").children;
-                let arrInseections: Array<any> = obj.getObjectByName("intersections").children;
-                let arrCars: Array<any> = obj.getObjectByName("cars").children;
-                let arrClouds: Array<any> = obj.getObjectByName("clouds").children;
-
-                let lenarr: Array<number> = [arrBlocks.length, arrLanes.length, arrInseections.length, arrCars.length, arrClouds.length];
-                console.log("The lenth is:" + JSON.stringify(lenarr));
-
             });
         });
     }

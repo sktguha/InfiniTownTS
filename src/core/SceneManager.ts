@@ -135,40 +135,37 @@ export class SceneManager {
                 this.chunkScene.add(this.dirLight);
                 this.chunkScene.add(this.dirLight.target);
 
+                // 初始化keyEvent:
+                this.initKeyEvent();
+
                 // 
                 // 处理smController:
                 this.smController = new SceneMoveController(this.inputMgr, this.chunkScene, this.cameraController);
 
-                // 
-                setTimeout(() => {
+                // 第一次刷新测试效果：
+                this.refreshChunkScene();
 
-                    // 第一次刷新测试效果：
+                // 响应chunkMove的消息处理与刷新：
+                EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
+
+                    this.iLastCx = xoff;
+                    this.iLastCy = yoff;
+                    this.gridCoords.x += xoff;
+                    this.gridCoords.y += yoff;
+
                     this.refreshChunkScene();
-                    // 响应chunkMove的消息处理与刷新：
-                    EventMgr.getins().on("chunkmove", (xoff: number, yoff: number) => {
+                });
+                this.cameraController.setCameraHeight(200);
 
-                        this.iLastCx = xoff;
-                        this.iLastCy = yoff;
-                        this.gridCoords.x += xoff;
-                        this.gridCoords.y += yoff;
+                this.bInited = true;
+                this.inputMgr.on("mousewheel", (value: any) => {
+                    this.cameraController.updateHeight(value.deltaY * .05);
+                });
 
-                        this.refreshChunkScene();
-                    });
-                    this.cameraController.setCameraHeight(200);
-
-                    this.bInited = true;
-                    this.inputMgr.on("mousewheel", (value: any) => {
-                        this.cameraController.updateHeight(value.deltaY * .05);
-                    });
-
-                    // 初始化keyEvent:
-                    this.initKeyEvent();
-
-                    // 处理点击效果：
-                    this.inputMgr.on("startdrag", (evt: any) => {
-                        this.onMousePickCar(evt);
-                    });
-                }, 500);
+                // 处理点击效果：
+                this.inputMgr.on("startdrag", (evt: any) => {
+                    this.onMousePickCar(evt);
+                });
             });
 
         });
