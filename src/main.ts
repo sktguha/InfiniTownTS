@@ -7,9 +7,6 @@ import { setupFPSCounter } from './utils/fpsCounter';
 const container = document.getElementById('app') as HTMLElement;
 const sceneManager = new SceneManager(container);
 
-// 添加初始对象
-const cube = new CubeObject();
-sceneManager.addObject(cube);
 
 // 设置UI
 setupUI({

@@ -27,8 +27,8 @@ export function setupUI(callbacks: UICallbacks): void {
     return button;
   };
   
-  container.appendChild(createButton('添加立方体', callbacks.addCube));
-  container.appendChild(createButton('添加球体', callbacks.addSphere));
+  //container.appendChild(createButton('添加立方体', callbacks.addCube));
+  //container.appendChild(createButton('添加球体', callbacks.addSphere));
   container.appendChild(createButton('重置场景', callbacks.resetScene));
   
   document.body.appendChild(container);

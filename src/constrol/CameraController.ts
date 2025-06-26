@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import CameraControls from 'camera-controls';
 import TWEEN from 'three/examples/jsm/libs/tween.module.js'
 import type { MobileCar } from '../objects/MobileCar';
+import { GVar } from '../utils/GVar';
 
 export class CameraController {
     public camera: THREE.PerspectiveCamera;
@@ -72,6 +73,8 @@ export class CameraController {
      * @param distance - 相机与物体的距离（默认 10）
      */
     public lookAtFront(object: MobileCar ) {
+
+        this.completePolarAdj();
         
         let controls : OrbitControls = this.controls  as OrbitControls;
         let camera : THREE.Camera = this.camera;
@@ -119,9 +122,12 @@ export class CameraController {
             .onComplete(() => {
                 // 动画完成后重新启用 OrbitControls
                 controls.enabled = true;
+                GVar.bCameraAnimState = false;  
                 controls.update();
+                
             })
             .start();
+            GVar.bCameraAnimState = true;
     }
 
 
@@ -172,6 +178,17 @@ export class CameraController {
         this.controls.enabled = false;
     }
 
+    /**
+     * 完成垂直旋转调整，为其它动画做准备.
+     */
+    protected completePolarAdj() : void{
+        if( this.bPolarAdj ){
+            this.camera.position.y - this.targetHeight;
+            this.camera.lookAt( (this.controls as OrbitControls).target );
+            this.lockVerticalRotation();
+        }
+    }
+
     public update(): void {
 
         TWEEN.update();
@@ -179,13 +196,12 @@ export class CameraController {
         // 允许垂直旋转：恢复默认角度范围
         if (this.bPolarAdj) {
             this.camera.position.y += .05 * (this.targetHeight - this.camera.position.y);
-            this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+            this.camera.lookAt((this.controls as OrbitControls).target);
 
             let diff: number = this.camera.position.y - this.targetHeight;
             if (Math.abs(diff) < this.tolerance) {
                 this.lockVerticalRotation();
             }
-            //console.log("New　Cammera Pos is:" + this.camera.position.y);
         }
 
         if (this.bUseCC)

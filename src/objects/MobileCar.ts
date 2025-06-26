@@ -18,7 +18,7 @@ export class MobileCar extends MobileObj {
     private direction: THREE.Vector3 | null = null;
     private collisionPoints: THREE.Vector3[] = [];
     private detectedCar: MobileCar | null = null;
-    private meshObj : THREE.Object3D | null = null; 
+    private meshObj: THREE.Object3D | null = null;
 
     protected debugBox: any = null;
 
@@ -30,8 +30,8 @@ export class MobileCar extends MobileObj {
         (obj as THREE.Mesh).geometry.computeBoundingBox();
 
         this.meshObj = obj;
-        if( this._isLargeVehicle() )
-            this.radarRadius = this.radarRadius*1.2;
+        if (this._isLargeVehicle())
+            this.radarRadius = this.radarRadius * 1.2;
         const box = new THREE.Box3().setFromObject(obj);
         this.add(obj);
         this.position.copy(road.position);
@@ -50,15 +50,18 @@ export class MobileCar extends MobileObj {
         this._initCollisionPoints(box);
 
         // 创建Box3Helper（自动生成线框）
-        if (GVar.bVisDebug) {
-            const boxHelper = new THREE.Box3Helper(box, 0xffff00); // 参数：Box3实例 + 颜色
-            obj.add(boxHelper);
-            this.debugBox = boxHelper;
+        const boxHelper = new THREE.Box3Helper(box, 0xffff00); // 参数：Box3实例 + 颜色
+        obj.add(boxHelper);
+        this.debugBox = boxHelper;
 
-        }
+        if (GVar.bVisDebug) {
+            this.debugBox.visible = true;
+        }else
+            this.debugBox.visible = false;
+
     }
 
-    public getMeshObj() : any{
+    public getMeshObj(): any {
         return this.meshObj;
     }
 
@@ -66,8 +69,8 @@ export class MobileCar extends MobileObj {
      * 获取当前Car移动的方向
      * @param dir 
      */
-    public getDirection( dir : THREE.Vector3 ) : void{
-        dir.copy( this.direction! );
+    public getDirection(dir: THREE.Vector3): void {
+        dir.copy(this.direction!);
     }
 
     private _initCollisionPoints(box: THREE.Box3): void {
@@ -123,12 +126,12 @@ export class MobileCar extends MobileObj {
         }
     }
 
-    protected bColorForceKeep : boolean = false;
-    public setDebugBoxColor( color: number,forceKeep : boolean = false ) : void{
-        if( this.bColorForceKeep && !forceKeep ) return;
+    protected bColorForceKeep: boolean = false;
+    public setDebugBoxColor(color: number, forceKeep: boolean = false): void {
+        if (this.bColorForceKeep && !forceKeep) return;
         this.bColorForceKeep = forceKeep;
-        if( this.debugBox )
-            (this.debugBox as THREE.BoxHelper).material.color.set( color );
+        if (this.debugBox)
+            (this.debugBox as THREE.BoxHelper).material.color.set(color);
     }
 
     private detectCar(obj: MobileCar): MobileCar | null {
@@ -181,8 +184,8 @@ export class MobileCar extends MobileObj {
     }
 
     protected _isLargeVehicle(): boolean {
-        let mesh : any  = this.meshObj;
-        return mesh.name.indexOf("Bus") !== -1 || 
+        let mesh: any = this.meshObj;
+        return mesh.name.indexOf("Bus") !== -1 ||
             mesh.name.indexOf("Container") !== -1 || mesh.name.indexOf("Truck") !== -1;
     }
 

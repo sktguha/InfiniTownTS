@@ -87,14 +87,14 @@ export class SceneManager {
         this.scene.add(ambientLight);
 
         // 添加坐标轴
-        const axesHelper = new THREE.AxesHelper(5);
-        this.scene.add(axesHelper);
+        //const axesHelper = new THREE.AxesHelper(5);
+        //this.scene.add(axesHelper);
 
         // 添加网格
-        const gridHelper = new THREE.GridHelper(20, 20);
-        (gridHelper.material as THREE.Material).opacity = 0.2;
-        (gridHelper.material as THREE.Material).transparent = true;
-        this.scene.add(gridHelper);
+        //const gridHelper = new THREE.GridHelper(20, 20);
+        //(gridHelper.material as THREE.Material).opacity = 0.2;
+        //(gridHelper.material as THREE.Material).transparent = true;
+        //this.scene.add(gridHelper);
 
         // 初始化时钟
         this.clock = new THREE.Clock();
@@ -159,7 +159,8 @@ export class SceneManager {
 
                 this.bInited = true;
                 this.inputMgr.on("mousewheel", (value: any) => {
-                    this.cameraController.updateHeight(value.deltaY * .05);
+                    if( !GVar.bCameraAnimState )
+                        this.cameraController.updateHeight(value.deltaY * .05);
                 });
 
                 // 处理点击效果：
@@ -191,12 +192,13 @@ export class SceneManager {
 
             // 
             // 是否显示调试信息:
+            /*
             if (GVar.bVisDebug) {
                 let arr: Array<any> = this.chunkScene!.getPickables();
                 for (let ti: number = 0; ti < arr.length; ti++)
                     arr[ti].visible = false;
                 insectObj.visible = true;
-            }
+            }*/
 
             let cx: number = (insectObj as any).userData["centeredX"];
             let cy: number = (insectObj as any).userData["centeredY"];

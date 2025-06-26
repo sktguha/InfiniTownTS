@@ -65,7 +65,10 @@ export class GVar {
     public static FOG_COLOR: number = 10676479;
 
     // 是否显示相关的调试信息:
-    public static bVisDebug : boolean = true;
+    public static bVisDebug : boolean = false;
+
+    // 当前是否处于相机动画状态.
+    public static bCameraAnimState : boolean = false;
 
     //! 屏幕宽高和像素比:
     public static gWidth : number = window.innerWidth;
