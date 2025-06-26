@@ -20,8 +20,6 @@ export class MobileCar extends MobileObj {
     private detectedCar: MobileCar | null = null;
     private meshObj : THREE.Object3D | null = null; 
 
-    private colBox : THREE.Box3 | null = null;  
-
     protected debugBox: any = null;
 
     constructor(table: CityChunkTbl, obj: THREE.Object3D, road: THREE.Object3D) {
@@ -51,7 +49,6 @@ export class MobileCar extends MobileObj {
         this.direction.set(Math.round(this.direction.x), Math.round(this.direction.y), Math.round(this.direction.z));
         this._initCollisionPoints(box);
 
-        this.colBox = box;
         // 创建Box3Helper（自动生成线框）
         if (GVar.bVisDebug) {
             const boxHelper = new THREE.Box3Helper(box, 0xffff00); // 参数：Box3实例 + 颜色
@@ -65,12 +62,8 @@ export class MobileCar extends MobileObj {
         return this.meshObj;
     }
 
-    public getBoxObj() : THREE.Box3{
-        return this.colBox!;
-    }
-
     /**
-     * WORK START: 检查为什么这个Direction与worldDirection并不一致.
+     * 获取当前Car移动的方向
      * @param dir 
      */
     public getDirection( dir : THREE.Vector3 ) : void{

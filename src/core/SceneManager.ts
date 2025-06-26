@@ -226,6 +226,9 @@ export class SceneManager {
                             let car: MobileCar = intersectors[ti].object.parent as MobileCar;
                             car.setDebugBoxColor(0xff00ff, true);
                             this.followMobile = car;
+                            // 
+                            // 顺便旋转相机的方向:
+                            this.cameraController.lookAtFront( car );
                         }
                     }
                 }

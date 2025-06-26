@@ -71,7 +71,7 @@ export class CameraController {
      * @param camera - 相机
      * @param distance - 相机与物体的距离（默认 10）
      */
-    public lookAtFront(object: THREE.Object3D ) {
+    public lookAtFront(object: MobileCar ) {
         
         let controls : OrbitControls = this.controls  as OrbitControls;
         let camera : THREE.Camera = this.camera;
@@ -87,7 +87,8 @@ export class CameraController {
 
         // 获取物体前进方向
         const objectForward = new THREE.Vector3();
-        (object as MobileCar).getDirection(objectForward);
+        object.getDirection(objectForward);
+        objectForward.negate();
 
         // 计算目标角度
         const desiredTheta = Math.atan2(objectForward.x, objectForward.z);
