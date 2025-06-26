@@ -18,11 +18,7 @@ setupUI({
   },
   resetScene: () => {
     sceneManager.removeAllObjects();
-    
-    // 重新添加初始对象
-    const cube = new CubeObject();
-    sceneManager.addObject(cube);
-    
+
   }
 });
 

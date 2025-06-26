@@ -205,6 +205,7 @@ export class SceneManager {
 
             let ckContainer: any = this.chunkScene?.getChunkContainer(cx, cy);
             let chunkIns: any = ckContainer.getObjectByName("chunk");
+            let bFollow : boolean = false;
 
             if (chunkIns && chunkIns.children.length > 0) {
                 // 找到当前的模块与相邻模块上所有的小汽车,做相交测试:
@@ -228,9 +229,15 @@ export class SceneManager {
                             // 
                             // 顺便旋转相机的方向:
                             this.cameraController.lookAtFront( car );
+                            
+                            bFollow = true;
                         }
                     }
                 }
+                // 
+                //　点击空白地面，切换自动跟随模式：
+                if( !bFollow ) 
+                    this.followMobile = null;
             }
         }
 
@@ -344,6 +351,7 @@ export class SceneManager {
             if (obj.dispose) obj.dispose();
         });
         this.objects = [];
+        this.followMobile = null;
     }
 
     public update(): void {

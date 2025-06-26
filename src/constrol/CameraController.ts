@@ -17,6 +17,8 @@ export class CameraController {
     protected vec3CamTarget: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
     protected bUseCC: boolean = false;
+    protected minHeight : number = 35;
+    protected maxHeight : number = 120;
 
 
     constructor(container: HTMLElement) {
@@ -32,7 +34,8 @@ export class CameraController {
             10,
             400
         );
-        this.camera.position.set(80, 140, 80); //initCamera
+        //this.camera.position.set(80, 140, 80); //initCamera
+        this.camera.position.set(70, 120, 70); //initCamera
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 
@@ -148,11 +151,11 @@ export class CameraController {
 
     public updateHeight(value: number): void {
         this.targetHeight = this.targetHeight + value;
-        if (this.targetHeight < 30) {
-            this.targetHeight = 30;
+        if (this.targetHeight < this.minHeight) {
+            this.targetHeight = this.minHeight;
         }
-        if (this.targetHeight > 140)
-            this.targetHeight = 140;
+        if (this.targetHeight > this.maxHeight)
+            this.targetHeight = this.maxHeight;
 
         this.unlockVerticalRotation();
     }
