@@ -12,7 +12,7 @@ ThreeJS主页无限城市项目的TypeScript开源版，基本上复制了原版
 ### 1️⃣ 克隆代码
 
 ```bash
-git clone https://github.com/yourusername/InfiniTownTS.git
+git clone https://github.com/osoker/InfiniTownTS.git
 cd InfiniTownTS
 ```
 
