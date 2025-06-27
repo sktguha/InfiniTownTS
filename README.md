@@ -1,5 +1,6 @@
 # 🚀InfiniTownTS
-> 🌍 [简体中文说明 / 中文版 README](./readme.zh_cn.md)
+> 🌍 [简体中文说明 / 中文版 README](./readme_zh_cn.md)
+
 An open-source TypeScript implementation of the Three.js Infinite City demo.  This project closely replicates the core logic and algorithmic brilliance of the original InfiniTown while enhancing camera control, animation, car interaction, and scene rotation features. It is also built using the latest version of the Three.js engine.
 
 
