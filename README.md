@@ -15,7 +15,7 @@ An open-source TypeScript implementation of the Three.js Infinite City demo.  Th
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/InfiniTownTS.git
+git clone https://github.com/osoker/InfiniTownTS.git
 cd InfiniTownTS
 ```
 
