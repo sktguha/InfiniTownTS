@@ -13,7 +13,7 @@ ThreeJS主页无限城市项目的TypeScript开源版，基本上复制了原版
 ```bash
 git clone https://github.com/yourusername/InfiniTownTS.git
 cd InfiniTownTS
-
+```
 
 ### 2️⃣ 安装依赖
 
@@ -49,7 +49,7 @@ InfiniTownTS/
 ├── public/            # 静态资源
 ├── package.json
 └── README.md
-
+```
 
 ---
 
