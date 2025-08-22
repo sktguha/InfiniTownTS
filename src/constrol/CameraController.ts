@@ -14,12 +14,13 @@ export class CameraControls {
 
   // Speed system
   private _speedLevel = 3; // default
+  private FC = 2;
   private readonly _speedTable = {
-    1: 0.5,  // very slow
-    2: 1.0,  // slow
-    3: 2.0,  // normal
-    4: 4.0,  // fast
-    5: 8.0   // 🚀 cruise mode
+    1: 0.5/this.FC,  // very slow
+    2: 1.0/this.FC,  // slow
+    3: 2.0/this.FC,  // normal
+    4: 4.0/this.FC,  // fast
+    5: 8.0/this.FC   // 🚀 cruise mode
   };
 
   // Tunables (base)
