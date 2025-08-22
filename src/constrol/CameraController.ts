@@ -63,7 +63,7 @@ export class CameraController {
             this.camera.position.addScaledVector(right, this.moveSpeed);
         }
 
-        // Vertical movement (R/F)
+        // Vertical movement
         if (this.keyState.has("KeyR")) {
             this.camera.position.addScaledVector(up, this.moveSpeed);
         }
@@ -71,7 +71,7 @@ export class CameraController {
             this.camera.position.addScaledVector(up, -this.moveSpeed);
         }
 
-        // Rotation yaw (Q/E)
+        // Rotation yaw
         if (this.keyState.has("KeyQ")) {
             this.camera.rotation.y += this.rotSpeed;
         }
@@ -79,7 +79,7 @@ export class CameraController {
             this.camera.rotation.y -= this.rotSpeed;
         }
 
-        // Rotation pitch (T/Y)
+        // Rotation pitch
         if (this.keyState.has("KeyT")) {
             this.camera.rotation.x += this.rotSpeed;
         }
@@ -87,7 +87,7 @@ export class CameraController {
             this.camera.rotation.x -= this.rotSpeed;
         }
 
-        // Rotation roll (G/H)
+        // Rotation roll
         if (this.keyState.has("KeyG")) {
             this.camera.rotation.z += this.rotSpeed;
         }
@@ -95,7 +95,7 @@ export class CameraController {
             this.camera.rotation.z -= this.rotSpeed;
         }
 
-        // Extra pitch fine control (B/N)
+        // Fine pitch
         if (this.keyState.has("KeyB")) {
             this.camera.rotation.x += this.rotSpeed * 0.5;
         }
@@ -104,10 +104,26 @@ export class CameraController {
         }
     }
 
-    public update(): void {
+    /** Set only the camera Y position (height) */
+    public setCameraHeight(y: number) {
+        this.camera.position.y = y;
+        this.controls.setLookAt(
+            this.camera.position.x,
+            this.camera.position.y,
+            this.camera.position.z,
+            ...this.getLookAtTarget().toArray()
+        );
+    }
+
+    /** New: return the current look-at target */
+    public getLookAtTarget(): THREE.Vector3 {
+        return this.controls.getTarget(new THREE.Vector3());
+    }
+
+    public update(delta: number = 0.016): void {
         TWEEN.update();
         this.handleKeyboardMovement();
-        this.controls.update(0.01);
+        this.controls.update(delta);
     }
 
     public onWindowResize(): void {
@@ -119,4 +135,38 @@ export class CameraController {
     public getCamera(): THREE.PerspectiveCamera {
         return this.camera;
     }
+    // --- Backward compatibility helpers ---
+
+    public getLookAtTarget(): THREE.Vector3 {
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        return this.camera.position.clone().add(dir);
+    }
+
+    public setLookAtTarget(target: THREE.Vector3): void {
+        this.camera.lookAt(target);
+    }
+
+    public setCameraHeight(height: number): void {
+        this.camera.position.y = height;
+    }
+
+    public getRotationAngle(): number {
+        // Interpret "rotation angle" as yaw (rotation around Y axis)
+        return this.camera.rotation.y;
+    }
+
+    // Optional helpers if code uses them later:
+    public getYaw(): number {
+        return this.camera.rotation.y;
+    }
+
+    public getPitch(): number {
+        return this.camera.rotation.x;
+    }
+
+    public getRoll(): number {
+        return this.camera.rotation.z;
+    }
+
 }
