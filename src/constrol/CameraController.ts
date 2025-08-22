@@ -14,7 +14,7 @@ export class CameraControls {
 
   // Speed system
   private _speedLevel = 3; // default
-  private FC = 3;
+  private FC = 5;
   private readonly _speedTable = {
     1: (0.5/this.FC),  // very slow
     2: (1.0/this.FC),  // slow
