@@ -158,6 +158,9 @@ export class CameraControls {
     const e = new THREE.Euler().setFromQuaternion(this._camera.quaternion, "YXZ");
     return e.y; // yaw in radians
   }
+  public getRotationFull(): THREE.Euler {
+    return this._camera.rotation.clone(); // returns Euler in "XYZ" order
+  }
 
   public getAzimuthalAngle(): number {
     return this.getRotationAngle();
