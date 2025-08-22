@@ -1,30 +1,30 @@
 import * as THREE from "three";
-import TWEEN from "@tweenjs/tween.js";
 import CameraControls from "camera-controls";
+import TWEEN from "@tweenjs/tween.js";
 
 CameraControls.install({ THREE: THREE });
 
 export class CameraController {
     private camera: THREE.PerspectiveCamera;
     private controls: CameraControls;
+    private container: HTMLElement;
     private keyState: Set<string> = new Set();
     private moveSpeed: number = 2.0;
-    private targetHeight: number = 0;
-    private bPolarAdj: boolean = false;
-    private tolerance: number = 0.1;
+    private rotSpeed: number = 0.03;
 
     constructor(container: HTMLElement) {
+        this.container = container;
+
         this.camera = new THREE.PerspectiveCamera(
             75,
             container.clientWidth / container.clientHeight,
             0.1,
             1000
         );
-        this.camera.position.set(0, 10, 20);
+        this.camera.position.set(0, 5, 10);
 
         this.controls = new CameraControls(this.camera, container);
-        this.controls.setLookAt(0, 0, 0, 0, 0, 0);
-        this.controls.dollyToCursor = true;
+        this.controls.setLookAt(0, 5, 10, 0, 0, 0);
 
         window.addEventListener("keydown", (e) => this.onKeyDown(e));
         window.addEventListener("keyup", (e) => this.onKeyUp(e));
@@ -48,7 +48,6 @@ export class CameraController {
         this.camera.getWorldDirection(forward);
         forward.y = 0;
         forward.normalize();
-
         right.crossVectors(forward, up).normalize();
 
         if (this.keyState.has("ArrowUp") || this.keyState.has("KeyW")) {
@@ -63,47 +62,58 @@ export class CameraController {
         if (this.keyState.has("ArrowRight") || this.keyState.has("KeyD")) {
             this.camera.position.addScaledVector(right, this.moveSpeed);
         }
+
+        // Vertical movement (R/F)
+        if (this.keyState.has("KeyR")) {
+            this.camera.position.addScaledVector(up, this.moveSpeed);
+        }
+        if (this.keyState.has("KeyF")) {
+            this.camera.position.addScaledVector(up, -this.moveSpeed);
+        }
+
+        // Rotation yaw (Q/E)
+        if (this.keyState.has("KeyQ")) {
+            this.camera.rotation.y += this.rotSpeed;
+        }
+        if (this.keyState.has("KeyE")) {
+            this.camera.rotation.y -= this.rotSpeed;
+        }
+
+        // Rotation pitch (T/Y)
+        if (this.keyState.has("KeyT")) {
+            this.camera.rotation.x += this.rotSpeed;
+        }
+        if (this.keyState.has("KeyY")) {
+            this.camera.rotation.x -= this.rotSpeed;
+        }
+
+        // Rotation roll (G/H)
+        if (this.keyState.has("KeyG")) {
+            this.camera.rotation.z += this.rotSpeed;
+        }
+        if (this.keyState.has("KeyH")) {
+            this.camera.rotation.z -= this.rotSpeed;
+        }
+
+        // Extra pitch fine control (B/N)
+        if (this.keyState.has("KeyB")) {
+            this.camera.rotation.x += this.rotSpeed * 0.5;
+        }
+        if (this.keyState.has("KeyN")) {
+            this.camera.rotation.x -= this.rotSpeed * 0.5;
+        }
     }
 
     public update(): void {
         TWEEN.update();
-
-        if (this.bPolarAdj) {
-            this.camera.position.y += 0.05 * (this.targetHeight - this.camera.position.y);
-            this.camera.lookAt(new THREE.Vector3(0, this.targetHeight, 0));
-            let diff: number = this.camera.position.y - this.targetHeight;
-            if (Math.abs(diff) < this.tolerance) {
-                this.lockVerticalRotation();
-            }
-        }
-
         this.handleKeyboardMovement();
-
         this.controls.update(0.01);
     }
 
-    public lockVerticalRotation(): void {
-        const target = new THREE.Vector3(0, this.targetHeight, 0);
-        this.controls.setLookAt(
-            this.camera.position.x,
-            this.camera.position.y,
-            this.camera.position.z,
-            target.x,
-            target.y,
-            target.z,
-            true
-        );
-        this.bPolarAdj = false;
-    }
-
-    public moveTo(x: number, y: number, z: number, targetHeight: number): void {
-        new TWEEN.Tween(this.camera.position)
-            .to({ x: x, y: y, z: z }, 1000)
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .start();
-
-        this.targetHeight = targetHeight;
-        this.bPolarAdj = true;
+    public onWindowResize(): void {
+        this.camera.aspect =
+            this.container.clientWidth / this.container.clientHeight;
+        this.camera.updateProjectionMatrix();
     }
 
     public getCamera(): THREE.PerspectiveCamera {
