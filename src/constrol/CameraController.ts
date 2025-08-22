@@ -51,7 +51,10 @@ export class CameraController {
         right.crossVectors(forward, up).normalize();
 
         if (this.keyState.has("ArrowUp") || this.keyState.has("KeyW")) {
+            console.log('arrow up');
+            console.log(this.camera.position);
             this.camera.position.addScaledVector(forward, this.moveSpeed);
+            console.log(this.camera.position);
         }
         if (this.keyState.has("ArrowDown") || this.keyState.has("KeyS")) {
             this.camera.position.addScaledVector(forward, -this.moveSpeed);
@@ -121,6 +124,7 @@ export class CameraController {
     }
 
     public update(delta: number = 0.016): void {
+        console.log('update called');
         TWEEN.update();
         this.handleKeyboardMovement();
         this.controls.update(delta);
