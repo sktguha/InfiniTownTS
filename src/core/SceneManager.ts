@@ -13,6 +13,8 @@ import { EventMgr } from '../utils/EventMgr';
 import { LightProbeLoader } from '../loader/LightProbeLoader';
 import { EXRLoader, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { MobileCar } from '../objects/MobileCar';
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+
 //import TWEEN from 'three/examples/jsm/libs/tween.module.js'
 
 export class SceneManager {
@@ -56,8 +58,19 @@ export class SceneManager {
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.fog = new THREE.Fog(GVar.FOG_COLOR, GVar.FOG_NEAR, GVar.FOG_FAR);
+        
         this.scene.background = new THREE.Color(GVar.FOG_COLOR);
-
+        const loader = new RGBELoader();
+        const params = new URLSearchParams(window.location.search);
+        loader.load(
+        params.get("url") as string, // full path here
+        (hdrTexture) => {
+            hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+            // assign HDR as scene background + environment
+            this.scene.background = hdrTexture;
+            this.scene.environment = hdrTexture;
+        }
+        );
         // 创建相机控制器
         this.cameraController = new CameraController(container);
         // @ts-ignore
