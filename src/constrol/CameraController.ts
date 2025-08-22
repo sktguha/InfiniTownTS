@@ -12,8 +12,17 @@ export class CameraControls {
   private _container?: HTMLElement;
   private _keys = new Set<string>();
 
-  // Tunables
-  private _moveSpeed = 2.0; // units per update
+  // Speed system
+  private _speedLevel = 3; // default
+  private readonly _speedTable = {
+    1: 0.5,  // very slow
+    2: 1.0,  // slow
+    3: 2.0,  // normal
+    4: 4.0,  // fast
+    5: 8.0   // 🚀 cruise mode
+  };
+
+  // Tunables (base)
   private _rotSpeed = 0.03; // radians per update
   private _rollSpeed = 0.03;
   private _finePitch = 0.015;
@@ -49,8 +58,21 @@ export class CameraControls {
     this._camera.lookAt(this._lookTarget);
 
     // Keyboard listeners
-    window.addEventListener("keydown", (e) => this._keys.add(e.code));
+    window.addEventListener("keydown", (e) => this._onKeyDown(e));
     window.addEventListener("keyup", (e) => this._keys.delete(e.code));
+  }
+
+  private _onKeyDown(e: KeyboardEvent): void {
+    this._keys.add(e.code);
+
+    // Speed control: keys 1–5
+    if (e.code.startsWith("Digit")) {
+      const n = Number(e.code.replace("Digit", ""));
+      if (n >= 1 && n <= 5) {
+        this._speedLevel = n;
+        console.log(`🚀 Speed set to level ${n} (${this._speedTable[n]} units/update)`);
+      }
+    }
   }
 
   // --- Public accessors ---
@@ -64,6 +86,8 @@ export class CameraControls {
 
   // --- Main per-frame update ---
   public update(delta: number = 0.016): void {
+    const moveSpeed = this._speedTable[this._speedLevel] * (delta / 0.016);
+
     // Movement basis
     const forward = new THREE.Vector3();
     this._camera.getWorldDirection(forward);
@@ -73,20 +97,20 @@ export class CameraControls {
 
     // --- Translation ---
     if (this._keys.has("ArrowUp") || this._keys.has("KeyW")) {
-      this._camera.position.addScaledVector(groundForward, this._moveSpeed);
+      this._camera.position.addScaledVector(groundForward, moveSpeed);
     }
     if (this._keys.has("ArrowDown") || this._keys.has("KeyS")) {
-      this._camera.position.addScaledVector(groundForward, -this._moveSpeed);
+      this._camera.position.addScaledVector(groundForward, -moveSpeed);
     }
     if (this._keys.has("ArrowLeft") || this._keys.has("KeyA")) {
-      this._camera.position.addScaledVector(right, -this._moveSpeed);
+      this._camera.position.addScaledVector(right, -moveSpeed);
     }
     if (this._keys.has("ArrowRight") || this._keys.has("KeyD")) {
-      this._camera.position.addScaledVector(right, this._moveSpeed);
+      this._camera.position.addScaledVector(right, moveSpeed);
     }
     // Vertical (height)
-    if (this._keys.has("KeyR")) this._camera.position.y += this._moveSpeed;
-    if (this._keys.has("KeyF")) this._camera.position.y -= this._moveSpeed;
+    if (this._keys.has("KeyR")) this._camera.position.y += moveSpeed;
+    if (this._keys.has("KeyF")) this._camera.position.y -= moveSpeed;
 
     // --- Rotation ---
     // Yaw (Q/E)
