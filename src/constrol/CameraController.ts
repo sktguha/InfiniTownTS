@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 /**
  * Backward-compatible camera controller with keyboard fly + legacy helpers.
- *
+ * working fine all speed 1 to 5
  * Constructor is flexible so existing code won't break:
  *  - new CameraController(container: HTMLElement)
  *  - new CameraController(camera: THREE.PerspectiveCamera, container?: HTMLElement)
