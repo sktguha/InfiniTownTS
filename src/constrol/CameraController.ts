@@ -1,176 +1,156 @@
 import * as THREE from "three";
-import CameraControls from "camera-controls";
-import TWEEN from "@tweenjs/tween.js";
 
-CameraControls.install({ THREE: THREE });
+/**
+ * Backward-compatible camera controller with keyboard fly + legacy helpers.
+ *
+ * Constructor is flexible so existing code won't break:
+ *  - new CameraController(container: HTMLElement)
+ *  - new CameraController(camera: THREE.PerspectiveCamera, container?: HTMLElement)
+ */
+export class CameraControls {
+  private _camera: THREE.PerspectiveCamera;
+  private _container?: HTMLElement;
+  private _keys = new Set<string>();
 
-export class CameraController {
-    private camera: THREE.PerspectiveCamera;
-    private controls: CameraControls;
-    private container: HTMLElement;
-    private keyState: Set<string> = new Set();
-    private moveSpeed: number = 2.0;
-    private rotSpeed: number = 0.03;
+  // Tunables
+  private _moveSpeed = 2.0; // units per update
+  private _rotSpeed = 0.03; // radians per update
+  private _rollSpeed = 0.03;
+  private _finePitch = 0.015;
 
-    constructor(container: HTMLElement) {
-        this.container = container;
+  // Persisted look target for legacy get/setLookAtTarget()
+  private _lookTarget = new THREE.Vector3(0, 0, -1);
 
-        this.camera = new THREE.PerspectiveCamera(
-            75,
-            container.clientWidth / container.clientHeight,
-            0.1,
-            1000
-        );
-        this.camera.position.set(0, 5, 10);
-
-        this.controls = new CameraControls(this.camera, container);
-        this.controls.setLookAt(0, 5, 10, 0, 0, 0);
-
-        window.addEventListener("keydown", (e) => this.onKeyDown(e));
-        window.addEventListener("keyup", (e) => this.onKeyUp(e));
+  // --- Constructors (overload-friendly) ---
+  constructor(container: HTMLElement);
+  constructor(camera: THREE.PerspectiveCamera, container?: HTMLElement);
+  constructor(arg1: HTMLElement | THREE.PerspectiveCamera, arg2?: HTMLElement) {
+    if (arg1 instanceof THREE.PerspectiveCamera) {
+      // Style: new CameraController(camera, container?)
+      this._camera = arg1;
+      this._container = arg2;
+      if (!this._camera.position) this._camera.position.set(0, 5, 10);
+    } else {
+      // Style: new CameraController(container)
+      this._container = arg1;
+      this._camera = new THREE.PerspectiveCamera(
+        75,
+        this._container.clientWidth / this._container.clientHeight,
+        0.1,
+        1000
+      );
+      this._camera.position.set(0, 5, 10);
     }
 
-    private onKeyDown(e: KeyboardEvent): void {
-        this.keyState.add(e.code);
+    // Initialize look target straight ahead from current pose
+    const dir = new THREE.Vector3();
+    this._camera.getWorldDirection(dir);
+    this._lookTarget.copy(this._camera.position).add(dir);
+    this._camera.lookAt(this._lookTarget);
+
+    // Keyboard listeners
+    window.addEventListener("keydown", (e) => this._keys.add(e.code));
+    window.addEventListener("keyup", (e) => this._keys.delete(e.code));
+  }
+
+  // --- Public accessors ---
+  public get camera(): THREE.PerspectiveCamera {
+    return this._camera;
+  }
+
+  public getCamera(): THREE.PerspectiveCamera {
+    return this._camera;
+  }
+
+  // --- Main per-frame update ---
+  public update(delta: number = 0.016): void {
+    // Movement basis
+    const forward = new THREE.Vector3();
+    this._camera.getWorldDirection(forward);
+    // Keep ground-style forward by default (ignore vertical component)
+    const groundForward = new THREE.Vector3(forward.x, 0, forward.z).normalize();
+    const right = new THREE.Vector3().crossVectors(groundForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    // --- Translation ---
+    if (this._keys.has("ArrowUp") || this._keys.has("KeyW")) {
+      this._camera.position.addScaledVector(groundForward, this._moveSpeed);
     }
-
-    private onKeyUp(e: KeyboardEvent): void {
-        this.keyState.delete(e.code);
+    if (this._keys.has("ArrowDown") || this._keys.has("KeyS")) {
+      this._camera.position.addScaledVector(groundForward, -this._moveSpeed);
     }
-
-    private handleKeyboardMovement(): void {
-        if (this.keyState.size === 0) return;
-
-        const forward = new THREE.Vector3();
-        const right = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-
-        this.camera.getWorldDirection(forward);
-        forward.y = 0;
-        forward.normalize();
-        right.crossVectors(forward, up).normalize();
-
-        if (this.keyState.has("ArrowUp") || this.keyState.has("KeyW")) {
-            console.log('arrow up');
-            console.log(this.camera.position);
-            this.camera.position.addScaledVector(forward, this.moveSpeed);
-            console.log(this.camera.position);
-        }
-        if (this.keyState.has("ArrowDown") || this.keyState.has("KeyS")) {
-            this.camera.position.addScaledVector(forward, -this.moveSpeed);
-        }
-        if (this.keyState.has("ArrowLeft") || this.keyState.has("KeyA")) {
-            this.camera.position.addScaledVector(right, -this.moveSpeed);
-        }
-        if (this.keyState.has("ArrowRight") || this.keyState.has("KeyD")) {
-            this.camera.position.addScaledVector(right, this.moveSpeed);
-        }
-
-        // Vertical movement
-        if (this.keyState.has("KeyR")) {
-            this.camera.position.addScaledVector(up, this.moveSpeed);
-        }
-        if (this.keyState.has("KeyF")) {
-            this.camera.position.addScaledVector(up, -this.moveSpeed);
-        }
-
-        // Rotation yaw
-        if (this.keyState.has("KeyQ")) {
-            this.camera.rotation.y += this.rotSpeed;
-        }
-        if (this.keyState.has("KeyE")) {
-            this.camera.rotation.y -= this.rotSpeed;
-        }
-
-        // Rotation pitch
-        if (this.keyState.has("KeyT")) {
-            this.camera.rotation.x += this.rotSpeed;
-        }
-        if (this.keyState.has("KeyY")) {
-            this.camera.rotation.x -= this.rotSpeed;
-        }
-
-        // Rotation roll
-        if (this.keyState.has("KeyG")) {
-            this.camera.rotation.z += this.rotSpeed;
-        }
-        if (this.keyState.has("KeyH")) {
-            this.camera.rotation.z -= this.rotSpeed;
-        }
-
-        // Fine pitch
-        if (this.keyState.has("KeyB")) {
-            this.camera.rotation.x += this.rotSpeed * 0.5;
-        }
-        if (this.keyState.has("KeyN")) {
-            this.camera.rotation.x -= this.rotSpeed * 0.5;
-        }
+    if (this._keys.has("ArrowLeft") || this._keys.has("KeyA")) {
+      this._camera.position.addScaledVector(right, -this._moveSpeed);
     }
-
-    /** Set only the camera Y position (height) */
-    public setCameraHeight(y: number) {
-        this.camera.position.y = y;
-        this.controls.setLookAt(
-            this.camera.position.x,
-            this.camera.position.y,
-            this.camera.position.z,
-            ...this.getLookAtTarget().toArray()
-        );
+    if (this._keys.has("ArrowRight") || this._keys.has("KeyD")) {
+      this._camera.position.addScaledVector(right, this._moveSpeed);
     }
+    // Vertical (height)
+    if (this._keys.has("KeyR")) this._camera.position.y += this._moveSpeed;
+    if (this._keys.has("KeyF")) this._camera.position.y -= this._moveSpeed;
 
-    /** New: return the current look-at target */
-    public getLookAtTarget(): THREE.Vector3 {
-        return this.controls.getTarget(new THREE.Vector3());
-    }
+    // --- Rotation ---
+    // Yaw (Q/E)
+    if (this._keys.has("KeyQ")) this._camera.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), this._rotSpeed);
+    if (this._keys.has("KeyE")) this._camera.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), -this._rotSpeed);
 
-    public update(delta: number = 0.016): void {
-        console.log('update called');
-        TWEEN.update();
-        this.handleKeyboardMovement();
-        this.controls.update(delta);
-    }
+    // Pitch (T/Y) — local X
+    if (this._keys.has("KeyT")) this._camera.rotateX(this._rotSpeed);
+    if (this._keys.has("KeyY")) this._camera.rotateX(-this._rotSpeed);
 
-    public onWindowResize(): void {
-        this.camera.aspect =
-            this.container.clientWidth / this.container.clientHeight;
-        this.camera.updateProjectionMatrix();
-    }
+    // Roll (G/H) — local Z
+    if (this._keys.has("KeyG")) this._camera.rotateZ(this._rollSpeed);
+    if (this._keys.has("KeyH")) this._camera.rotateZ(-this._rollSpeed);
 
-    public getCamera(): THREE.PerspectiveCamera {
-        return this.camera;
-    }
-    // --- Backward compatibility helpers ---
+    // Fine pitch (B/N)
+    if (this._keys.has("KeyB")) this._camera.rotateX(this._finePitch);
+    if (this._keys.has("KeyN")) this._camera.rotateX(-this._finePitch);
 
-    public getLookAtTarget(): THREE.Vector3 {
-        const dir = new THREE.Vector3();
-        this.camera.getWorldDirection(dir);
-        return this.camera.position.clone().add(dir);
-    }
+    // Update persistent look target
+    const dir = new THREE.Vector3();
+    this._camera.getWorldDirection(dir);
+    this._lookTarget.copy(this._camera.position).add(dir);
+    this._camera.lookAt(this._lookTarget);
+  }
 
-    public setLookAtTarget(target: THREE.Vector3): void {
-        this.camera.lookAt(target);
-    }
+  // --- Backward-compatibility helpers (match old API) ---
+  /** SceneMoveController expects this. */
+  public getLookAtTarget(): THREE.Vector3 {
+    return this._lookTarget.clone();
+  }
 
-    public setCameraHeight(height: number): void {
-        this.camera.position.y = height;
-    }
+  public setLookAtTarget(target: THREE.Vector3): void {
+    this._lookTarget.copy(target);
+    this._camera.lookAt(this._lookTarget);
+  }
 
-    public getRotationAngle(): number {
-        // Interpret "rotation angle" as yaw (rotation around Y axis)
-        return this.camera.rotation.y;
-    }
+  public setCameraHeight(y: number): void {
+    this._camera.position.y = y;
+    this._camera.lookAt(this._lookTarget);
+  }
 
-    // Optional helpers if code uses them later:
-    public getYaw(): number {
-        return this.camera.rotation.y;
-    }
+  /** Interpret rotation angle as yaw (azimuth around Y). */
+  public getRotationAngle(): number {
+    const e = new THREE.Euler().setFromQuaternion(this._camera.quaternion, "YXZ");
+    return e.y; // yaw in radians
+  }
 
-    public getPitch(): number {
-        return this.camera.rotation.x;
-    }
+  public getAzimuthalAngle(): number {
+    return this.getRotationAngle();
+  }
 
-    public getRoll(): number {
-        return this.camera.rotation.z;
-    }
+  public getPosition(): THREE.Vector3 { return this._camera.position.clone(); }
+  public setPosition(v: THREE.Vector3): void { this._camera.position.copy(v); }
+  public getYaw(): number { return this.getRotationAngle(); }
+  public getPitch(): number { const e = new THREE.Euler().setFromQuaternion(this._camera.quaternion, "YXZ"); return e.x; }
+  public getRoll(): number { const e = new THREE.Euler().setFromQuaternion(this._camera.quaternion, "YXZ"); return e.z; }
 
+  // --- Resize helper (works when constructed with container) ---
+  public onWindowResize(): void {
+    if (!this._container) return;
+    this._camera.aspect = this._container.clientWidth / this._container.clientHeight;
+    this._camera.updateProjectionMatrix();
+  }
 }
+
+// ✅ Alias to keep old imports working: import { CameraController } ...
+export { CameraControls as CameraController };
