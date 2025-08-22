@@ -24,6 +24,15 @@ setupUI({
 // 设置FPS计数器
 setupFPSCounter();
 
+setTimeout(() => {
+  try {
+    window.camera.setPosition(new window.THREE.Vector3(
+      -50.77595575780843,
+      1.9999999999982334,
+      22.465322255919943
+    ))
+  } catch (e) { }
+}, 3000);
 // 双击进入全屏并自动聚焦
 container.addEventListener("dblclick", () => {
   if (!document.fullscreenElement) {

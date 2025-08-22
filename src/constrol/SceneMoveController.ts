@@ -39,7 +39,9 @@ export class SceneMoveController {
         this._scene = scene;
         this._camera = cam;
         this.enabled = true;
-
+        // @ts-ignore
+        window.camera = cam; // for debug
+        window.THREE = THREE;
         // 
         // 禁用原版城市的自己的移动逻辑，直接使用OrbitConstrol提供的平移功能:
         //imgr.on("startdrag", this._onStartDrag.bind(this));

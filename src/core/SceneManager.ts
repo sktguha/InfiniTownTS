@@ -60,6 +60,8 @@ export class SceneManager {
 
         // 创建相机控制器
         this.cameraController = new CameraController(container);
+        // @ts-ignore
+        window.cameraController = this.cameraController; 
         container.addEventListener('contextmenu', function (e) {
             e.preventDefault();
         });
