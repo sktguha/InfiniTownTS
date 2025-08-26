@@ -199,6 +199,6 @@ document.addEventListener("keydown", async function (e) {
     iframe.style.visibility = 'visible';
     iframe.focus();
   } else if (e.key === "7") {
-    iframe.style.visibility = 'hidden';
+    iframe.style.visibility = 'hidden'
   }
 });

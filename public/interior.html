@@ -621,7 +621,7 @@
         room.position.y = -20;
         room.rotation.y = Math.PI / 4;
         scene.add(room);
-        
+
         // --- Resize Handler ---
         window.addEventListener('resize', onWindowResize, false);
 
@@ -665,7 +665,7 @@
             if (keys["KeyT"]) camera.rotation.x += rotSpeed; // look up
             if (keys["KeyY"]) camera.rotation.x -= rotSpeed; // look down
         }
-        
+
         animate();
 
         function animate() {
@@ -722,6 +722,13 @@
 
         addEnclosingWalls(room);
         addCelling();
+        document.addEventListener("keydown", async function (e) {
+            if (e.key === "7") {
+                const opener = window.parent;
+                opener.document.getElementById('interior').style.visibility = 'hidden';
+                opener.focus();
+            }
+        });
     </script>
 </body>
 
