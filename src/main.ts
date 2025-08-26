@@ -159,7 +159,8 @@ let newWin: Window;
 async function moveCameraForward(camera, speed = 10, duration = 4000) {
   return new Promise(resolve => {
     const start = performance.now();
-
+    camera.position.y = 4; // keep height constant
+    camera.updateProjectionMatrix();
     function step(now) {
       const elapsed = now - start;
 
