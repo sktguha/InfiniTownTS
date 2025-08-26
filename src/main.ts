@@ -73,9 +73,10 @@ function isCameraNearAnything(camera, scene, threshold = 5) {
   return near;
 }
 window.isCameraNearAnything = isCameraNearAnything;
-window.addFullPageIframe = function addFullPageIframe(url="https://5c2q73.csb.app/") {
+window.addFullPageIframe = function addFullPageIframe(url="https://5c2q73.csb.app/",id='roads') {
   const iframe = document.createElement("iframe");
   iframe.src = url;
+  iframe.id = id;
   iframe.style.position = "fixed";
   iframe.style.top = "0";
   iframe.style.left = "0";
@@ -88,3 +89,5 @@ window.addFullPageIframe = function addFullPageIframe(url="https://5c2q73.csb.ap
   iframe.style.zIndex = "9999"; // stay on top
   document.body.appendChild(iframe);
 }
+// window.addFullPageIframe('/interior.html', 'interior');
+window.addFullPageIframe('/sroads/index.html', 'roads');
