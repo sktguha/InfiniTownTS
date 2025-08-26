@@ -315,6 +315,16 @@
     };
 
   </script>
+  <script>
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "9") {
+        console.log("Changing background to HDR...");
+        if (window.opener) {
+          window.opener.focus(); // shift focus back to main window
+        }
+      }
+    });
+  </script>
 </body>
 
 </html>
