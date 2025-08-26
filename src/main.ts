@@ -103,7 +103,7 @@ function createTopBar(options = {}) {
   } = options;
 
   const bar = document.createElement("div");
-  bar.innerText = text;
+  // bar.innerText = text;
   bar.style.position = "fixed";
   bar.style.top = "0";
   bar.style.left = "0";
@@ -114,21 +114,35 @@ function createTopBar(options = {}) {
   bar.style.display = "flex";
   bar.style.alignItems = "center";
   bar.style.justifyContent = "center";
+  bar.style.gap = "10px"; // spacing between buttons
   bar.style.zIndex = "1000";
   if (blur) bar.style.backdropFilter = "blur(5px)";
-  function makeBtn(show, id) {
+
+  function makeBtn(label: string, onClick: () => void) {
     const btn = document.createElement("button");
-    btn.innerText = show ? "show " +id : "hide" + id;
-    btn.onclick = () => {
-      document.getElementById(id)!.style.visibility = show ? "visible" : "hidden";
-    }
+    btn.innerText = label;
+    btn.onclick = onClick;
     bar.appendChild(btn);
   }
-  makeBtn(true, 'interior');
-  makeBtn(false, 'interior');
-  makeBtn(true, 'roads');
-  makeBtn(false, 'roads');
-  
+
+  // Main Page button
+  makeBtn("City", () => {
+    document.getElementById('interior')!.style.visibility = 'hidden';
+    document.getElementById('roads')!.style.visibility = 'hidden';
+  });
+
+  // Show Interior
+  makeBtn("Interior", () => {
+    document.getElementById('interior')!.style.visibility = 'visible';
+    document.getElementById('roads')!.style.visibility = 'hidden';
+  });
+
+  // Show Roads
+  makeBtn("Roads", () => {
+    document.getElementById('interior')!.style.visibility = 'hidden';
+    document.getElementById('roads')!.style.visibility = 'visible';
+  });
+
   document.body.appendChild(bar);
   return bar;
 }
