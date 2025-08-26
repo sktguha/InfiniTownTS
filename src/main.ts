@@ -6,6 +6,7 @@ import { setupFPSCounter } from './utils/fpsCounter';
 // 初始化场景
 const container = document.getElementById('app') as HTMLElement;
 const sceneManager = new SceneManager(container);
+window.sceneManager = sceneManager;
 
 // 设置UI
 setupUI({
@@ -54,3 +55,36 @@ function animate() {
 }
 
 animate();
+function isCameraNearAnything(camera, scene, threshold = 5) {
+  const camPos = new THREE.Vector3();
+  camera.getWorldPosition(camPos);
+
+  let near = false;
+
+  scene.traverse((obj) => {
+    if (obj.isMesh) {
+      const box = new THREE.Box3().setFromObject(obj);
+      const closest = box.clampPoint(camPos, new THREE.Vector3());
+      const dist = camPos.distanceTo(closest);
+      if (dist < threshold) near = true;
+    }
+  });
+
+  return near;
+}
+window.isCameraNearAnything = isCameraNearAnything;
+window.addFullPageIframe = function addFullPageIframe(url="https://5c2q73.csb.app/") {
+  const iframe = document.createElement("iframe");
+  iframe.src = url;
+  iframe.style.position = "fixed";
+  iframe.style.top = "0";
+  iframe.style.left = "0";
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+  iframe.style.margin = "0";
+  iframe.style.padding = "0";
+  iframe.style.overflow = "hidden";
+  iframe.style.zIndex = "9999"; // stay on top
+  document.body.appendChild(iframe);
+}
