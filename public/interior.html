@@ -621,6 +621,18 @@
         room.position.y = -20;
         room.rotation.y = Math.PI / 4;
         scene.add(room);
+        
+        // --- Resize Handler ---
+        window.addEventListener('resize', onWindowResize, false);
+
+        function onWindowResize() {
+            // Update camera aspect ratio
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            // Update renderer size
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
         // --- Keyboard controls ---
         const keys = {};
@@ -653,6 +665,7 @@
             if (keys["KeyT"]) camera.rotation.x += rotSpeed; // look up
             if (keys["KeyY"]) camera.rotation.x -= rotSpeed; // look down
         }
+        
         animate();
 
         function animate() {
