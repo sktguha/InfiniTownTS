@@ -7,7 +7,8 @@ import { setupFPSCounter } from './utils/fpsCounter';
 const container = document.getElementById('app') as HTMLElement;
 const sceneManager = new SceneManager(container);
 window.sceneManager = sceneManager;
-
+const getParams = key => new URLSearchParams(window.location.search).get(key);
+window.getParams = getParams;
 // 设置UI
 setupUI({
   addCube: () => {
@@ -183,9 +184,9 @@ async function moveCameraForward(h = 4, speed = 10*7, duration = 4000) {
 
 document.addEventListener("keydown", async function (e) {
   // Check if key "9" is pressed (keyCode 57 or e.key === "9")
-  if (e.key === "9") {
+  if (e.key === "8") {
     await moveCameraForward(12, 10*7, 4000);
-    newWin = newWin || window.open("/sroads/index.html", "_blank");
+    newWin = newWin || window.open(window.getParams('sroads') || window.getParams('slowroads') || "/sroads/index.html", "_blank");
     if (newWin) {
       newWin.focus(); // shift focus to new window
     } else {
