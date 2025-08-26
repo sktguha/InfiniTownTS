@@ -158,7 +158,7 @@ window.addFullPageIframe('/interior.html', 'interior');
 // window.addFullPageIframe('/sroads/index.html', 'roads');
 // document.getElementById('interior')!.style.visibility = 'hidden';
 // document.getElementById('roads')!.style.visibility = 'hidden';
-let newWin: Window;
+let newWin: Window & { resetAndRandomize: () => void; };
 async function moveCameraForward(h = 4, speed = 10 * 7, duration = 4000) {
   const camera = window.cameraController._camera;
   return new Promise(resolve => {
@@ -192,6 +192,7 @@ document.addEventListener("keydown", async function (e) {
     newWin = newWin || window.open(window.getParams('sroads') || window.getParams('slowroads') || "/sroads/index.html", "_blank");
     if (newWin) {
       newWin.focus(); // shift focus to new window
+      newWin.resetAndRandomize();
     } else {
       alert("Popup blocked! Please allow popups for this site.");
     }
