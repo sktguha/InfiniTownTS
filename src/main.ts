@@ -135,12 +135,14 @@ function createTopBar(options = {}) {
   makeBtn("Interior", () => {
     document.getElementById('interior')!.style.visibility = 'visible';
     document.getElementById('roads')!.style.visibility = 'hidden';
+    document.getElementById('interior')!.focus();
   });
 
   // Show Roads
   makeBtn("Roads", () => {
     document.getElementById('interior')!.style.visibility = 'hidden';
     document.getElementById('roads')!.style.visibility = 'visible';
+    document.getElementById('roads')!.focus();
   });
 
   document.body.appendChild(bar);
