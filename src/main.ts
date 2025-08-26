@@ -93,9 +93,6 @@ window.addFullPageIframe = function addFullPageIframe(
   iframe.style.zIndex = "0"; // behind top bar
   document.body.appendChild(iframe);
 }
-
-// window.addFullPageIframe('/interior.html', 'interior');
-window.addFullPageIframe('/sroads/index.html', 'roads');
 function createTopBar(options = {}) {
   const {
     height = 60,
@@ -119,10 +116,26 @@ function createTopBar(options = {}) {
   bar.style.justifyContent = "center";
   bar.style.zIndex = "1000";
   if (blur) bar.style.backdropFilter = "blur(5px)";
-
+  function makeBtn(show, id) {
+    const btn = document.createElement("button");
+    btn.innerText = show ? "show " +id : "hide" + id;
+    btn.onclick = () => {
+      document.getElementById(id)!.style.visibility = show ? "visible" : "hidden";
+    }
+    bar.appendChild(btn);
+  }
+  makeBtn(true, 'interior');
+  makeBtn(false, 'interior');
+  makeBtn(true, 'roads');
+  makeBtn(false, 'roads');
+  
   document.body.appendChild(bar);
   return bar;
 }
 
 // Usage:
 createTopBar({ text: "Hello, I stay on top!" });
+window.addFullPageIframe('/interior.html', 'interior');
+window.addFullPageIframe('/sroads/index.html', 'roads');
+document.getElementById('interior')!.style.visibility = 'hidden';
+document.getElementById('roads')!.style.visibility = 'hidden';
