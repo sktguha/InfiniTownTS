@@ -156,10 +156,34 @@ function createTopBar(options = {}) {
 // document.getElementById('interior')!.style.visibility = 'hidden';
 // document.getElementById('roads')!.style.visibility = 'hidden';
 let newWin: Window;
-document.addEventListener("keydown", function (e) {
+async function moveCameraForward(camera, speed = 10, duration = 4000) {
+  return new Promise(resolve => {
+    const start = performance.now();
+
+    function step(now) {
+      const elapsed = now - start;
+
+      if (elapsed < duration) {
+        // Move camera forward in its local space
+        camera.translateZ(-speed * 0.016); // ~60fps step
+        requestAnimationFrame(step);
+      } else {
+        resolve();
+      }
+    }
+
+    requestAnimationFrame(step);
+  });
+}
+
+// usage:
+// console.log("done moving");
+
+document.addEventListener("keydown", async function (e) {
   // Check if key "9" is pressed (keyCode 57 or e.key === "9")
   if (e.key === "9") {
-     newWin = newWin || window.open("/sroads/index.html", "_blank");
+    await moveCameraForward(window.cameraController._camera, 20, 4000);
+    newWin = newWin || window.open("/sroads/index.html", "_blank");
     if (newWin) {
       newWin.focus(); // shift focus to new window
     } else {
