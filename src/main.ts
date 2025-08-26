@@ -202,3 +202,34 @@ document.addEventListener("keydown", async function (e) {
     iframe.style.visibility = 'hidden'
   }
 });
+
+function setupAudio(src) {
+  const audio = new Audio(src);
+  audio.loop = true;
+
+  // try autoplay instantly
+  audio.play().catch(() => {
+    // if blocked, wait for first click/tap
+    const startOnClick = () => {
+      audio.play();
+      document.removeEventListener("click", startOnClick);
+    };
+    document.addEventListener("click", startOnClick, { once: true });
+  });
+
+  // pause/resume when tab visibility changes
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      audio.pause();
+    } else {
+      audio.play().catch(() => { });
+    }
+  });
+
+  return audio;
+}
+
+// usage
+// https://www.youtube.com/watch?v=ukbZkjnbPCQ&t=58s
+const bgm = setupAudio("your-audio-file.mp3");
+
