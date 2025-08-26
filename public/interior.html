@@ -246,6 +246,7 @@
             populateShelves(dynamicShelfItemsGroup);
         }
         
+        window.resetAndRandomize = resetAndRandomize; 
 
         // --- MAIN ROOM CREATION FUNCTION (RUNS ONCE) ---
         function createRoom() {
@@ -404,7 +405,7 @@
             if (keys["KeyQ"]) camera.rotation.y += rotSpeed;
             if (keys["KeyE"]) camera.rotation.y -= rotSpeed;
             if (keys["KeyT"]) camera.rotation.z += rotSpeed;
-            if (keys["KeyG"]) camera.rotation.z -= rotSpeed;
+            if (keys["KeyY"]) camera.rotation.z -= rotSpeed;
         }
 
         // --- ANIMATION LOOP ---
