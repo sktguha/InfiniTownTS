@@ -155,10 +155,11 @@ function createTopBar(options = {}) {
 // window.addFullPageIframe('/sroads/index.html', 'roads');
 // document.getElementById('interior')!.style.visibility = 'hidden';
 // document.getElementById('roads')!.style.visibility = 'hidden';
+let newWin: Window;
 document.addEventListener("keydown", function (e) {
   // Check if key "9" is pressed (keyCode 57 or e.key === "9")
   if (e.key === "9") {
-    const newWin = window.open("/sroads/index.html", "_blank");
+     newWin = newWin || window.open("/sroads/index.html", "_blank");
     if (newWin) {
       newWin.focus(); // shift focus to new window
     } else {
