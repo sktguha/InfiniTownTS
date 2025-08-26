@@ -18793,7 +18793,7 @@
               }
             }
             onLoaded() {
-              alert('haha');
+              // alert('haha');
               window.main = this;
               // working main yea this only 
               this.initialised

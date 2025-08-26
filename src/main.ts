@@ -73,21 +73,56 @@ function isCameraNearAnything(camera, scene, threshold = 5) {
   return near;
 }
 window.isCameraNearAnything = isCameraNearAnything;
-window.addFullPageIframe = function addFullPageIframe(url="https://5c2q73.csb.app/",id='roads') {
+window.addFullPageIframe = function addFullPageIframe(
+  url = "https://5c2q73.csb.app/",
+  id = "roads",
+  topBarHeight = 60 // height of the top bar in px
+) {
   const iframe = document.createElement("iframe");
   iframe.src = url;
   iframe.id = id;
   iframe.style.position = "fixed";
-  iframe.style.top = "0";
+  iframe.style.top = topBarHeight + "px"; // start below top bar
   iframe.style.left = "0";
   iframe.style.width = "100%";
-  iframe.style.height = "100%";
+  iframe.style.height = `calc(100% - ${topBarHeight}px)`; // fill remaining space
   iframe.style.border = "none";
   iframe.style.margin = "0";
   iframe.style.padding = "0";
   iframe.style.overflow = "hidden";
-  iframe.style.zIndex = "9999"; // stay on top
+  iframe.style.zIndex = "0"; // behind top bar
   document.body.appendChild(iframe);
 }
+
 // window.addFullPageIframe('/interior.html', 'interior');
 window.addFullPageIframe('/sroads/index.html', 'roads');
+function createTopBar(options = {}) {
+  const {
+    height = 60,
+    background = "#333",
+    color = "#fff",
+    text = "My Top Bar",
+    blur = true
+  } = options;
+
+  const bar = document.createElement("div");
+  bar.innerText = text;
+  bar.style.position = "fixed";
+  bar.style.top = "0";
+  bar.style.left = "0";
+  bar.style.width = "100%";
+  bar.style.height = height + "px";
+  bar.style.backgroundColor = background;
+  bar.style.color = color;
+  bar.style.display = "flex";
+  bar.style.alignItems = "center";
+  bar.style.justifyContent = "center";
+  bar.style.zIndex = "1000";
+  if (blur) bar.style.backdropFilter = "blur(5px)";
+
+  document.body.appendChild(bar);
+  return bar;
+}
+
+// Usage:
+createTopBar({ text: "Hello, I stay on top!" });
