@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Three.js Interior Room (Randomized & Fixed)</title>
+    <title>Three.js Interior Room (Interactive Rearrange)</title>
     <style>
         body {
             margin: 0;
@@ -19,6 +19,11 @@
 <body>
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.179.1/three.module.js';
+
+        // --- GLOBAL VARIABLES FOR DYNAMIC OBJECTS ---
+        let dynamicFurnitureGroup;
+        let dynamicShelfItemsGroup;
+        let mainRoomGroup; // Will hold the main room group
 
         // --- SCENE, CAMERA, RENDERER SETUP ---
         const scene = new THREE.Scene();
@@ -53,457 +58,314 @@
             max = Math.floor(max);
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
+        
+        const colorPalette = [0x564945, 0x7a5646, 0xdc936d, 0xa38658, 0xfcc6a8, 0x614032, 0x2b2002];
+        const getRandomColor = () => colorPalette[Math.floor(Math.random() * colorPalette.length)];
 
-        // --- MAIN ROOM CREATION FUNCTION ---
+        // --- OBJECT CREATION FUNCTIONS (UNCHANGED) ---
+
+        function createBottle(bottleColor) {
+            const bottle = new THREE.Group();
+            const material1 = new THREE.MeshStandardMaterial({
+                color: bottleColor || 0xffffff, metalness: 0.8, roughness: 0.6
+            });
+            const main = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 4), material1);
+            main.castShadow = true;
+            bottle.add(main);
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 1, 1.5), material1);
+            top.position.y = 2.75;
+            top.castShadow = true;
+            bottle.add(top);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 1, roughness: 0.3 }));
+            cap.position.y = 3.5;
+            cap.castShadow = true;
+            bottle.add(cap);
+            return bottle;
+        }
+
+        function createCup(cupColor) {
+            const material1 = new THREE.MeshStandardMaterial({
+                color: cupColor || getRandomColor(), metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide
+            });
+            const main = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 32, 1, true), material1);
+            main.castShadow = true;
+            return main;
+        }
+
+        function createCoffeeTable(tableColor) {
+            const table = new THREE.Group();
+            const material1 = new THREE.MeshStandardMaterial({
+                color: tableColor || getRandomColor(), metalness: 0.6, roughness: 0.4
+            });
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1), material1);
+            top.castShadow = true; top.receiveShadow = true;
+            table.add(top);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 9), material1);
+            leg.position.set(0, -5, 0); table.add(leg);
+            const base1 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 1), material1);
+            base1.position.set(0, -10, 0); table.add(base1);
+            const base2 = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 1), material1);
+            base2.position.set(0, -11, 0); table.add(base2);
+            return table;
+        }
+
+        function createChair(seatColor, legColor) {
+            const chair = new THREE.Group();
+            const seatMaterial = new THREE.MeshStandardMaterial({ color: seatColor || getRandomColor(), metalness: 0.8, roughness: 0.6 });
+            const legMaterial = new THREE.MeshStandardMaterial({ color: legColor || getRandomColor(), metalness: 0.5, roughness: 0.6 });
+            const seat = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.5, 1.5, 4), seatMaterial);
+            seat.castShadow = true; chair.add(seat);
+            const legGeom = new THREE.CylinderGeometry(0.5, 1.25, 9, 4);
+            const positions = [[0, -5, 1.75], [0, -5, -1.75], [-1.75, -5, 0], [1.75, -5, 0]];
+            positions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeom, legMaterial);
+                leg.position.set(...pos); leg.castShadow = true; chair.add(leg);
+            });
+            chair.rotation.y = Math.PI / 4;
+            return chair;
+        }
+
+
+        // --- DYNAMIC CONTENT POPULATION FUNCTIONS ---
+
+        function populateShelves(itemsGroup) {
+            const shelfYPositions = [33, 27];
+            shelfYPositions.forEach(yPos => {
+                const numItems = getRandomInt(2, 5);
+                const itemPositions = new Set();
+                for (let i = 0; i < numItems; i++) {
+                    let zPos;
+                    do { zPos = getRandomNumber(-23, -11); }
+                    while (Array.from(itemPositions).some(p => Math.abs(p - zPos) < 2.5));
+                    itemPositions.add(zPos);
+                    if (Math.random() > 0.6) {
+                        const bottle = createBottle();
+                        bottle.position.set(-21, yPos + 3, zPos);
+                        bottle.scale.set(0.8, 0.8, 0.8);
+                        itemsGroup.add(bottle);
+                    } else {
+                        const cup = createCup();
+                        cup.position.set(-21, yPos + 1.5, zPos);
+                        itemsGroup.add(cup);
+                    }
+                }
+            });
+        }
+        
+        function populateRoomWithFurniture() {
+            const furnitureGroup = new THREE.Group();
+            const placedAreas = [];
+            const groupCount = getRandomInt(2, 3);
+            const placementBounds = { xMin: -15, xMax: 15, zMin: -15, zMax: 15 };
+            for (let i = 0; i < groupCount; i++) {
+                let position, validPosition = false, attempts = 0;
+                while (!validPosition && attempts < 50) {
+                    position = new THREE.Vector3(
+                        getRandomNumber(placementBounds.xMin, placementBounds.xMax), 5,
+                        getRandomNumber(placementBounds.zMin, placementBounds.zMax)
+                    );
+                    validPosition = !placedAreas.some(area => position.distanceTo(area.position) < area.radius);
+                    attempts++;
+                }
+                if (validPosition) {
+                    placedAreas.push({ position, radius: 20 });
+                    const group = new THREE.Group();
+                    const tableColor = getRandomColor();
+                    const table = createCoffeeTable(tableColor);
+                    const tableYPosition = 7.5;
+                    table.position.set(position.x, tableYPosition, position.z);
+                    group.add(table);
+                    const numProps = getRandomInt(1, 4);
+                    for(let j = 0; j < numProps; j++) {
+                       const propAngle = Math.random() * Math.PI * 2, propRadius = getRandomNumber(0, 4.5);
+                       const propX = position.x + Math.cos(propAngle) * propRadius, propZ = position.z + Math.sin(propAngle) * propRadius;
+                       if(Math.random() > 0.5) {
+                           const cup = createCup(getRandomColor());
+                           cup.position.set(propX, tableYPosition + 1.5, propZ); group.add(cup);
+                       } else {
+                           const bottle = createBottle();
+                           bottle.scale.setScalar(0.7);
+                           bottle.position.set(propX, tableYPosition + 2, propZ); group.add(bottle);
+                       }
+                    }
+                    const numChairs = getRandomInt(1, 4);
+                    for (let k = 0; k < numChairs; k++) {
+                        const angle = (k / numChairs) * Math.PI * 2 + getRandomNumber(-0.2, 0.2), radius = 8;
+                        const chairX = position.x + Math.cos(angle) * radius, chairZ = position.z + Math.sin(angle) * radius;
+                        const chair = createChair(getRandomColor(), tableColor);
+                        chair.position.set(chairX, 5, chairZ);
+                        chair.lookAt(position.x, 5, position.z); chair.rotation.y += Math.PI / 4;
+                        if (Math.random() > 0.75) { chair.scale.set(1.2, 1.5, 1.2); chair.position.y = 6.5; }
+                        group.add(chair);
+                    }
+                    furnitureGroup.add(group);
+                }
+            }
+            return furnitureGroup;
+        }
+
+
+        // --- MAIN REARRANGE FUNCTION ---
+        function resetAndRandomize() {
+            console.log("Rearranging room...");
+            
+            // Helper to safely dispose of all objects in a group
+            function disposeGroup(group) {
+                if (!group) return;
+                group.traverse((object) => {
+                    if (object.isMesh) {
+                        if (object.geometry) object.geometry.dispose();
+                        if (object.material) {
+                            if (Array.isArray(object.material)) {
+                                object.material.forEach(material => material.dispose());
+                            } else {
+                                object.material.dispose();
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 1. Remove and dispose of old furniture
+            if (dynamicFurnitureGroup) {
+                disposeGroup(dynamicFurnitureGroup);
+                mainRoomGroup.remove(dynamicFurnitureGroup);
+            }
+            
+            // 2. Clear out old shelf items
+            if (dynamicShelfItemsGroup) {
+                disposeGroup(dynamicShelfItemsGroup);
+                dynamicShelfItemsGroup.clear();
+            }
+
+            // 3. Create and add new furniture
+            dynamicFurnitureGroup = populateRoomWithFurniture();
+            mainRoomGroup.add(dynamicFurnitureGroup);
+
+            // 4. Create and add new shelf items
+            populateShelves(dynamicShelfItemsGroup);
+        }
+        
+
+        // --- MAIN ROOM CREATION FUNCTION (RUNS ONCE) ---
         function createRoom() {
             const room = new THREE.Group();
+            mainRoomGroup = room; // Assign to global variable
 
+            // Static room parts (floor, walls, counter, etc.)
             const loader = new THREE.TextureLoader();
             const floorTexture = loader.load("https://i.imgur.com/xxUIbgv.jpg");
             const windowTexture = loader.load("https://i.imgur.com/oUgNt36.png");
-
-            // A consistent color palette for randomized objects
-            const colorPalette = [0x564945, 0x7a5646, 0xdc936d, 0xa38658, 0xfcc6a8, 0x614032, 0x2b2002];
-            const getRandomColor = () => colorPalette[Math.floor(Math.random() * colorPalette.length)];
-
-            // --- FLOOR & WALLS ---
             const groundGeometry = new THREE.BoxGeometry(50, 50, 2);
-            const groundMaterial = new THREE.MeshStandardMaterial({
-                map: floorTexture,
-                roughness: 0.7,
-                metalness: 0.3
-            });
+            const groundMaterial = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.7, metalness: 0.3 });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.receiveShadow = true;
-            ground.position.set(0, -5, 0);
-            ground.rotation.x = Math.PI / 2;
+            ground.receiveShadow = true; ground.position.set(0, -5, 0); ground.rotation.x = Math.PI / 2;
             room.add(ground);
-
-            const wallMaterial = new THREE.MeshStandardMaterial({
-                color: 0x2b2002,
-                roughness: 0.8,
-                metalness: 0.3
-            });
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x2b2002, roughness: 0.8, metalness: 0.3 });
             wallMaterial.receiveShadow = true;
             const wall1 = new THREE.Mesh(groundGeometry, wallMaterial.clone());
-            wall1.rotation.y = -Math.PI / 2;
-            wall1.position.set(-24, 21, 0);
-            room.add(wall1);
-
+            wall1.rotation.y = -Math.PI / 2; wall1.position.set(-24, 21, 0); room.add(wall1);
             const wall2 = new THREE.Mesh(groundGeometry, wallMaterial.clone());
-            wall2.position.set(0, 21, -24);
-            room.add(wall2);
-
-            // --- WINDOW & WINDOW LIGHT ---
-            const window = new THREE.Mesh(
-                new THREE.BoxGeometry(25, 15, 0.2),
-                new THREE.MeshStandardMaterial({ map: windowTexture })
-            );
-            window.position.set(5, 18, -22.5);
-            room.add(window);
-
+            wall2.position.set(0, 21, -24); room.add(wall2);
+            const window = new THREE.Mesh(new THREE.BoxGeometry(25, 15, 0.2), new THREE.MeshStandardMaterial({ map: windowTexture }));
+            window.position.set(5, 18, -22.5); room.add(window);
             const rectLight = new THREE.RectAreaLight(0xffffff, 50, 10, 15);
-            rectLight.position.set(8, -5, -15.5);
-            rectLight.lookAt(0, 0, 0);
-            scene.add(rectLight);
+            rectLight.position.set(8, -5, -15.5); rectLight.lookAt(0, 0, 0); scene.add(rectLight);
+            const windowBottom = new THREE.Mesh(new THREE.BoxGeometry(28, 1, 5), new THREE.MeshStandardMaterial({ color: 0xa38658, metalness: 0.8, roughness: 0.2 }));
+            windowBottom.position.set(5, 10, -21); windowBottom.receiveShadow = true; room.add(windowBottom);
 
-            const windowBottom = new THREE.Mesh(
-                new THREE.BoxGeometry(28, 1, 5),
-                new THREE.MeshStandardMaterial({
-                    color: 0xa38658,
-                    metalness: 0.8,
-                    roughness: 0.2
-                })
-            );
-            windowBottom.position.set(5, 10, -21);
-            windowBottom.receiveShadow = true;
-            room.add(windowBottom);
-
-            // --- FAIRY LIGHTS ---
             function createFairyLights(axis) {
-                const fairyLights = new THREE.Group();
-                const lightColor = 0xed8c74;
-                const lightIntensity = 20;
-                const numLights = 23;
+                const fairyLights = new THREE.Group(); const lightColor = 0xed8c74; const numLights = 23;
                 let y_coords = [45, 44, 43, 42, 41, 40, 40, 40, 41, 42, 43, 44, 45, 45, 44, 43, 42, 41, 40, 40, 40, 41, 42, 43, 44, 45];
-
                 for (let i = 0; i < numLights; i++) {
                     const fairyLight = new THREE.Group();
-                    const light = new THREE.PointLight(lightColor, lightIntensity, 8, 2);
-                    light.power = 800;
-                    // light.castShadow = true; // <-- FIX: REMOVED. Too many lights to cast shadows.
-                    fairyLight.add(light);
-
-                    const glowingMaterial = new THREE.MeshStandardMaterial({
-                        color: lightColor,
-                        emissive: lightColor,
-                        emissiveIntensity: 5
-                    });
-                    const glowingBulb = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), glowingMaterial);
+                    const light = new THREE.PointLight(lightColor, 20, 8, 2); light.power = 800; fairyLight.add(light);
+                    const glowingBulb = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), new THREE.MeshStandardMaterial({ color: lightColor, emissive: lightColor, emissiveIntensity: 5 }));
                     fairyLight.add(glowingBulb);
-
-                    if (axis === 'z') {
-                        fairyLight.position.set(-22.5, y_coords[i], -20 + i * 2);
-                    } else { // axis 'x'
-                        fairyLight.position.set(-22 + i * 2, y_coords[i], -22.5);
-                    }
+                    if (axis === 'z') { fairyLight.position.set(-22.5, y_coords[i], -20 + i * 2); } else { fairyLight.position.set(-22 + i * 2, y_coords[i], -22.5); }
                     fairyLights.add(fairyLight);
-                }
-                return fairyLights;
+                } return fairyLights;
             }
-            room.add(createFairyLights('z'));
-            room.add(createFairyLights('x'));
-
-            // --- COUNTER ---
+            room.add(createFairyLights('z')); room.add(createFairyLights('x'));
+            
             function createCounter() {
-                const counter = new THREE.Group();
-                const mainMaterial = new THREE.MeshStandardMaterial({ color: 0xdc936d, metalness: 0.6, roughness: 0.5 });
-                const accentMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5646, metalness: 0.6, roughness: 0.5 });
-                const screenMaterial = new THREE.MeshStandardMaterial({ color: 0x302d2b, metalness: 0.6, roughness: 0.4 });
-
-                const table = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 25), mainMaterial);
-                table.position.set(-10, 0, 12);
-                table.castShadow = true;
-                counter.add(table);
-
-                const handle1 = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 2), accentMaterial);
-                handle1.position.set(-10, 6.75, 24);
-                counter.add(handle1);
-
-                const handle2 = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 2), accentMaterial);
-                handle2.position.set(-10, 6.75, 0);
-                counter.add(handle2);
-
-                const handle3 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 25), accentMaterial);
-                handle3.position.set(-6.5, 6.75, 12);
-                counter.add(handle3);
-
-                const shape = new THREE.Shape().moveTo(0, 0).lineTo(0, 4).lineTo(6, 4).lineTo(6, 0).lineTo(0, 0);
-                const extrudeSettings = { steps: 1, depth: 0.4, bevelEnabled: true, bevelThickness: 1, bevelSize: 5, bevelOffset: -4, bevelSegments: 4 };
-                const monitor = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, extrudeSettings), screenMaterial);
-                monitor.position.set(-11, 7.5, 21);
-                monitor.rotation.y = Math.PI / 2;
-                counter.add(monitor);
-
-                const monitorStand = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 3), screenMaterial);
-                monitorStand.position.set(-10, 6.75, 18);
-                counter.add(monitorStand);
-
-                const screen = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 4, 6),
-                    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5 })
-                );
-                screen.position.set(-11.55, 9.5, 18);
-                counter.add(screen);
-
-                const screenLight = new THREE.PointLight(0xffffff, 1, 50, 0);
-                screenLight.position.set(-12, 10, 18);
-                counter.add(screenLight);
-
-                return counter;
+                 const counter = new THREE.Group();
+                 const mainMaterial = new THREE.MeshStandardMaterial({ color: 0xdc936d, metalness: 0.6, roughness: 0.5 });
+                 const accentMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5646, metalness: 0.6, roughness: 0.5 });
+                 const screenMaterial = new THREE.MeshStandardMaterial({ color: 0x302d2b, metalness: 0.6, roughness: 0.4 });
+                 const table = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 25), mainMaterial); table.position.set(-10, 0, 12); table.castShadow = true; counter.add(table);
+                 const handle1 = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 2), accentMaterial); handle1.position.set(-10, 6.75, 24); counter.add(handle1);
+                 const handle2 = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 2), accentMaterial); handle2.position.set(-10, 6.75, 0); counter.add(handle2);
+                 const handle3 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 25), accentMaterial); handle3.position.set(-6.5, 6.75, 12); counter.add(handle3);
+                 const shape = new THREE.Shape().moveTo(0, 0).lineTo(0, 4).lineTo(6, 4).lineTo(6, 0).lineTo(0, 0);
+                 const extrudeSettings = { steps: 1, depth: 0.4, bevelEnabled: true, bevelThickness: 1, bevelSize: 5, bevelOffset: -4, bevelSegments: 4 };
+                 const monitor = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, extrudeSettings), screenMaterial); monitor.position.set(-11, 7.5, 21); monitor.rotation.y = Math.PI / 2; counter.add(monitor);
+                 const monitorStand = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 3), screenMaterial); monitorStand.position.set(-10, 6.75, 18); counter.add(monitorStand);
+                 const screen = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5 })); screen.position.set(-11.55, 9.5, 18); counter.add(screen);
+                 const screenLight = new THREE.PointLight(0xffffff, 1, 50, 0); screenLight.position.set(-12, 10, 18); counter.add(screenLight);
+                 return counter;
             }
             room.add(createCounter());
-
-            // --- WALL LIGHTS ---
+            
             function createLight() {
                 const light = new THREE.Group();
-                const base = new THREE.Mesh(new THREE.CylinderGeometry(2, 1.75, 2.5), wallMaterial);
-                base.position.set(-23, 35, 0);
-                base.rotation.z = Math.PI / 2;
-                light.add(base);
-
-                const bulbMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5 });
-                const bulb = new THREE.Mesh(new THREE.SphereGeometry(1), bulbMaterial);
-                bulb.position.set(-21.5, 35, 0);
-                light.add(bulb);
-
-                const bulbLight = new THREE.PointLight(0xffffff, 30, 8, 2);
-                bulbLight.power = 800;
-                // bulbLight.castShadow = true; // <-- FIX: REMOVED. These are decorative lights.
-                bulbLight.position.set(-21.5, 35, 0);
-                light.add(bulbLight);
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(2, 1.75, 2.5), wallMaterial); base.position.set(-23, 35, 0); base.rotation.z = Math.PI / 2; light.add(base);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 5 })); bulb.position.set(-21.5, 35, 0); light.add(bulb);
+                const bulbLight = new THREE.PointLight(0xffffff, 30, 8, 2); bulbLight.power = 800; bulbLight.position.set(-21.5, 35, 0); light.add(bulbLight);
                 return light;
             }
-            room.add(createLight());
-            const light2 = createLight();
-            light2.rotation.y = -Math.PI / 2;
-            room.add(light2);
+            room.add(createLight()); const light2 = createLight(); light2.rotation.y = -Math.PI / 2; room.add(light2);
 
-
-            // --- REUSABLE MESH CREATION FUNCTIONS (MODIFIED FOR RANDOMNESS) ---
-
-            function createBottle(bottleColor) {
-                const bottle = new THREE.Group();
-                const material1 = new THREE.MeshStandardMaterial({
-                    color: bottleColor || 0xffffff,
-                    metalness: 0.8,
-                    roughness: 0.6
-                });
-                const main = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 4), material1);
-                main.castShadow = true;
-                bottle.add(main);
-
-                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 1, 1.5), material1);
-                top.position.y = 2.75;
-                top.castShadow = true;
-                bottle.add(top);
-
-                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.5), new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 1, roughness: 0.3 }));
-                cap.position.y = 3.5;
-                cap.castShadow = true;
-                bottle.add(cap);
-
-                return bottle;
-            }
-
-            function createCup(cupColor) {
-                const material1 = new THREE.MeshStandardMaterial({
-                    color: cupColor || getRandomColor(),
-                    metalness: 0.6,
-                    roughness: 0.5,
-                    side: THREE.DoubleSide
-                });
-                const main = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 32, 1, true), material1);
-                main.castShadow = true;
-                return main; // Return mesh directly
-            }
-
-            // --- SHELVES (NOW WITH RANDOMIZED PROPS) ---
-            function createShelves() {
-                const shelves = new THREE.Group();
-                const shelfMaterial = new THREE.MeshStandardMaterial({ color: 0x564945, metalness: 0.6, roughness: 0.4 });
-                
-                function createShelf(yPos) {
-                    const shelf = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 15), shelfMaterial);
-                    shelf.position.set(-21, yPos, -17);
-                    shelf.castShadow = true;
-                    shelf.receiveShadow = true;
-                    shelves.add(shelf);
-                    
-                    const numItems = getRandomInt(2, 5);
-                    const itemPositions = new Set();
-                    for (let i = 0; i < numItems; i++) {
-                        let zPos;
-                        do {
-                            zPos = getRandomNumber(-23, -11);
-                        } while (Array.from(itemPositions).some(p => Math.abs(p - zPos) < 2.5));
-                        itemPositions.add(zPos);
-                        
-                        if (Math.random() > 0.6) { 
-                            const bottle = createBottle();
-                            bottle.position.set(-21, yPos + 3, zPos);
-                            bottle.scale.set(0.8, 0.8, 0.8);
-                            shelves.add(bottle);
-                        } else { 
-                             const cup = createCup();
-                             cup.position.set(-21, yPos + 1.5, zPos);
-                             shelves.add(cup);
-                        }
-                    }
-                }
-                
-                createShelf(33);
-                createShelf(27);
-                
-                return shelves;
-            }
-            room.add(createShelves());
-
-
-            // --- FURNITURE CREATION (REUSABLE & RANDOMIZED) ---
-
-            function createCoffeeTable(tableColor) {
-                const table = new THREE.Group();
-                const material1 = new THREE.MeshStandardMaterial({
-                    color: tableColor || getRandomColor(),
-                    metalness: 0.6,
-                    roughness: 0.4
-                });
-
-                const top = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1), material1);
-                top.castShadow = true;
-                top.receiveShadow = true;
-                table.add(top);
-
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 9), material1);
-                leg.position.set(0, -5, 0); 
-                table.add(leg);
-
-                const base1 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 1), material1);
-                base1.position.set(0, -10, 0); 
-                table.add(base1);
-
-                const base2 = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 1), material1);
-                base2.position.set(0, -11, 0); 
-                table.add(base2);
-                
-                return table;
-            }
-
-            function createChair(seatColor, legColor) {
-                const chair = new THREE.Group();
-                const seatMaterial = new THREE.MeshStandardMaterial({ color: seatColor || getRandomColor(), metalness: 0.8, roughness: 0.6 });
-                const legMaterial = new THREE.MeshStandardMaterial({ color: legColor || getRandomColor(), metalness: 0.5, roughness: 0.6 });
-
-                const seat = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.5, 1.5, 4), seatMaterial);
-                seat.castShadow = true;
-                chair.add(seat);
-                
-                const legGeom = new THREE.CylinderGeometry(0.5, 1.25, 9, 4);
-                const positions = [[0, -5, 1.75], [0, -5, -1.75], [-1.75, -5, 0], [1.75, -5, 0]];
-                positions.forEach(pos => {
-                    const leg = new THREE.Mesh(legGeom, legMaterial);
-                    leg.position.set(...pos);
-                    leg.castShadow = true;
-                    chair.add(leg);
-                });
-
-                chair.rotation.y = Math.PI / 4;
-                return chair;
-            }
-
-
-            // --- DYNAMIC FURNITURE PLACEMENT LOGIC ---
-            function populateRoomWithFurniture(room) {
-                const furnitureGroups = new THREE.Group();
-                const placedAreas = [];
-                const groupCount = getRandomInt(2, 3);
-                const placementBounds = { xMin: -15, xMax: 15, zMin: -15, zMax: 15 };
-
-                for (let i = 0; i < groupCount; i++) {
-                    let position, validPosition = false;
-                    let attempts = 0;
-                    
-                    while (!validPosition && attempts < 50) {
-                        position = new THREE.Vector3(
-                            getRandomNumber(placementBounds.xMin, placementBounds.xMax),
-                            5,
-                            getRandomNumber(placementBounds.zMin, placementBounds.zMax)
-                        );
-                        validPosition = true;
-                        for (const area of placedAreas) {
-                            if (position.distanceTo(area.position) < area.radius) {
-                                validPosition = false;
-                                break;
-                            }
-                        }
-                        attempts++;
-                    }
-
-                    if (validPosition) {
-                        const groupRadius = 20; 
-                        placedAreas.push({ position, radius: groupRadius });
-
-                        const group = new THREE.Group();
-
-                        const tableColor = getRandomColor();
-                        const table = createCoffeeTable(tableColor);
-                        const tableYPosition = 7.5;
-                        table.position.set(position.x, tableYPosition, position.z);
-                        group.add(table);
-                        
-                        const numProps = getRandomInt(1, 4);
-                        for(let j = 0; j < numProps; j++) {
-                           const propAngle = Math.random() * Math.PI * 2;
-                           const propRadius = getRandomNumber(0, 4.5);
-                           const propX = position.x + Math.cos(propAngle) * propRadius;
-                           const propZ = position.z + Math.sin(propAngle) * propRadius;
-                           
-                           if(Math.random() > 0.5) {
-                               const cup = createCup(getRandomColor());
-                               cup.position.set(propX, tableYPosition + 1.5, propZ);
-                               group.add(cup);
-                           } else {
-                               const bottle = createBottle();
-                               bottle.scale.setScalar(0.7);
-                               bottle.position.set(propX, tableYPosition + 2, propZ);
-                               group.add(bottle);
-                           }
-                        }
-                        
-                        const numChairs = getRandomInt(1, 4);
-                        const chairSeatColor = getRandomColor();
-                        const chairLegColor = tableColor;
-                        for (let k = 0; k < numChairs; k++) {
-                            const angle = (k / numChairs) * Math.PI * 2 + getRandomNumber(-0.2, 0.2);
-                            const radius = 8;
-                            const chairX = position.x + Math.cos(angle) * radius;
-                            const chairZ = position.z + Math.sin(angle) * radius;
-
-                            const chair = createChair(chairSeatColor, chairLegColor);
-                            chair.position.set(chairX, 5, chairZ);
-                            chair.lookAt(position.x, 5, position.z);
-                            chair.rotation.y += Math.PI / 4; 
-                            
-                            if (Math.random() > 0.75) {
-                                chair.scale.set(1.2, 1.5, 1.2);
-                                chair.position.y = 6.5; 
-                            }
-
-                            group.add(chair);
-                        }
-                        furnitureGroups.add(group);
-                    }
-                }
-                room.add(furnitureGroups);
-            }
+            // Create shelves structure and a separate group for their items
+            const shelvesGroup = new THREE.Group();
+            const shelfMaterial = new THREE.MeshStandardMaterial({ color: 0x564945, metalness: 0.6, roughness: 0.4 });
+            const shelf1 = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 15), shelfMaterial);
+            shelf1.position.set(-21, 33, -17); shelf1.castShadow = true; shelf1.receiveShadow = true; shelvesGroup.add(shelf1);
+            const shelf2 = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 15), shelfMaterial);
+            shelf2.position.set(-21, 27, -17); shelf2.castShadow = true; shelf2.receiveShadow = true; shelvesGroup.add(shelf2);
+            room.add(shelvesGroup);
             
-            populateRoomWithFurniture(room);
-            
+            // Assign the empty items group to the global variable so it can be cleared and repopulated
+            dynamicShelfItemsGroup = new THREE.Group();
+            room.add(dynamicShelfItemsGroup);
 
-            // --- MAIN DIRECTIONAL LIGHT (FOR SHADOWS) ---
+            // Main directional light
             const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-            directionalLight.position.set(20, 30, -20);
-            directionalLight.castShadow = true; // <-- THIS IS OUR MAIN SHADOW CASTER
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
-            scene.add(directionalLight.target);
-            directionalLight.target.position.set(0,0,0);
-
+            directionalLight.position.set(20, 30, -20); directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048; directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight); scene.add(directionalLight.target); directionalLight.target.position.set(0,0,0);
 
             return room;
         }
 
+        // --- INITIAL SCENE SETUP ---
         const room = createRoom();
         room.scale.set(0.7, 0.7, 0.7);
         room.position.y = -20;
         room.rotation.y = Math.PI / 4;
         scene.add(room);
+
+        // Initial population of the room
+        resetAndRandomize();
         
         // --- ADDING REMAINING WALLS AND CEILING ---
         function addEnclosingWalls(targetRoom) {
             const geometry = new THREE.BoxGeometry(50, 50, 2);
-            const wallMaterial = new THREE.MeshStandardMaterial({
-                color: 0x2b2002, roughness: 0.8, metalness: 0.3
-            });
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x2b2002, roughness: 0.8, metalness: 0.3 });
             wallMaterial.receiveShadow = true;
-            
-            const wallFront = new THREE.Mesh(geometry, wallMaterial.clone());
-            wallFront.position.set(0, 21, 24);
-            targetRoom.add(wallFront);
-
-            const wallRight = new THREE.Mesh(geometry, wallMaterial.clone());
-            wallRight.rotation.y = -Math.PI / 2;
-            wallRight.position.set(24, 21, 0);
-            targetRoom.add(wallRight);
+            const wallFront = new THREE.Mesh(geometry, wallMaterial.clone()); wallFront.position.set(0, 21, 24); targetRoom.add(wallFront);
+            const wallRight = new THREE.Mesh(geometry, wallMaterial.clone()); wallRight.rotation.y = -Math.PI / 2; wallRight.position.set(24, 21, 0); targetRoom.add(wallRight);
         }
-
         function addCeiling() {
             const ceilingGeom = new THREE.PlaneGeometry(50, 50);
             const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x2b2002, side: THREE.DoubleSide });
             const ceiling = new THREE.Mesh(ceilingGeom, ceilingMat);
-            ceiling.receiveShadow = true;
-            ceiling.rotation.x = Math.PI / 2;
-            ceiling.position.set(0, 46 * 0.7 - 20, 0);
-            scene.add(ceiling);
+            ceiling.receiveShadow = true; ceiling.rotation.x = Math.PI / 2; ceiling.position.set(0, 46 * 0.7 - 20, 0); scene.add(ceiling);
         }
-        
         scene.scale.set(2, 2, 2);
         addEnclosingWalls(room);
         addCeiling();
         
-
         // --- RESIZE HANDLER ---
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
@@ -512,38 +374,15 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- KEYBOARD CONTROLS FOR CAMERA ---
+        // --- KEYBOARD CONTROLS ---
         const keys = {};
-        document.addEventListener("keydown", (e) => { keys[e.code] = true; });
-        document.addEventListener("keyup", (e) => { keys[e.code] = false; });
-
-        function updateCameraMovement() {
-            const speed = 0.2; 
-            const rotSpeed = 0.02;
-
-            if (keys["KeyW"]) camera.translateZ(-speed);
-            if (keys["KeyS"]) camera.translateZ(speed);
-            if (keys["KeyA"]) camera.translateX(-speed);
-            if (keys["KeyD"]) camera.translateX(speed);
-            if (keys["KeyR"]) camera.position.y += speed;
-            if (keys["KeyF"]) camera.position.y -= speed;
-            if (keys["KeyQ"]) camera.rotation.y += rotSpeed;
-            if (keys["KeyE"]) camera.rotation.y -= rotSpeed;
-            if (keys["KeyT"]) camera.rotation.x += rotSpeed;
-            if (keys["KeyG"]) camera.rotation.x -= rotSpeed;
-        }
-
-        // --- ANIMATION LOOP ---
-        function animate() {
-            requestAnimationFrame(animate);
-            updateCameraMovement();
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // --- EXIT LISTENER ---
-        document.addEventListener("keydown", async function (e) {
+        document.addEventListener("keydown", (e) => { 
+            keys[e.code] = true; 
+            // Trigger for rearranging furniture
+            if (e.key.toLowerCase() === 'p') {
+                resetAndRandomize();
+            }
+            // Exit listener
             if (e.key === "7") {
                 const opener = window.parent;
                 if (opener && opener.document.getElementById('interior')) {
@@ -552,6 +391,29 @@
                 }
             }
         });
+        document.addEventListener("keyup", (e) => { keys[e.code] = false; });
+
+        function updateCameraMovement() {
+            const speed = 0.2, rotSpeed = 0.02;
+            if (keys["KeyW"]) camera.translateZ(-speed);
+            if (keys["KeyS"]) camera.translateZ(speed);
+            if (keys["KeyA"]) camera.translateX(-speed);
+            if (keys["KeyD"]) camera.translateX(speed);
+            if (keys["KeyR"]) camera.position.y += speed;
+            if (keys["KeyF"]) camera.position.y -= speed;
+            if (keys["KeyQ"]) camera.rotation.y += rotSpeed;
+            if (keys["KeyE"]) camera.rotation.y -= rotSpeed;
+            if (keys["KeyT"]) camera.rotation.z += rotSpeed;
+            if (keys["KeyG"]) camera.rotation.z -= rotSpeed;
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            updateCameraMovement();
+            renderer.render(scene, camera);
+        }
+        animate();
     </script>
 </body>
 
