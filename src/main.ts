@@ -231,5 +231,5 @@ function setupAudio(src) {
 
 // usage
 // https://www.youtube.com/watch?v=ukbZkjnbPCQ&t=58s
-const bgm = setupAudio("/city.mp4");
+const bgm = setupAudio("/city.mp3");
 
