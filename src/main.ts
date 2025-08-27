@@ -101,7 +101,7 @@ window.addFullPageIframe = function addFullPageIframe(
     iframe.src = url;
     iframe.id = id;
     iframe.style.position = "fixed";
-    iframe.style.top = "0"; // start below top bar
+    iframe.style.top = "0";
     iframe.style.left = "0";
     iframe.style.width = "100%";
     iframe.style.height = "100%";
@@ -109,7 +109,7 @@ window.addFullPageIframe = function addFullPageIframe(
     iframe.style.margin = "0";
     iframe.style.padding = "0";
     iframe.style.overflow = "hidden";
-    iframe.style.zIndex = "0"; // behind top bar
+    iframe.style.zIndex = "0";
     document.body.appendChild(iframe);
     iframe.style.visibility = 'hidden';
 }
@@ -119,7 +119,6 @@ function createTopBar(options: any = {}) {
         height = 60,
         background = "#333",
         color = "#fff",
-        text = "My Top Bar",
         blur = true
     } = options;
 
@@ -134,7 +133,7 @@ function createTopBar(options: any = {}) {
     bar.style.display = "flex";
     bar.style.alignItems = "center";
     bar.style.justifyContent = "center";
-    bar.style.gap = "10px"; // spacing between buttons
+    bar.style.gap = "10px";
     bar.style.zIndex = "1000";
     if (blur) bar.style.backdropFilter = "blur(5px)";
 
@@ -145,20 +144,17 @@ function createTopBar(options: any = {}) {
         bar.appendChild(btn);
     }
 
-    // Main Page button
     makeBtn("City", () => {
         document.getElementById('interior')!.style.visibility = 'hidden';
         document.getElementById('roads')!.style.visibility = 'hidden';
     });
 
-    // Show Interior
     makeBtn("Interior", () => {
         document.getElementById('interior')!.style.visibility = 'visible';
         document.getElementById('roads')!.style.visibility = 'hidden';
         document.getElementById('interior')!.focus();
     });
 
-    // Show Roads
     makeBtn("Roads", () => {
         document.getElementById('interior')!.style.visibility = 'hidden';
         document.getElementById('roads')!.style.visibility = 'visible';
@@ -169,24 +165,23 @@ function createTopBar(options: any = {}) {
     return bar;
 }
 
-// Initial setup
+// NOTE: The iframe is created here but is no longer used by the keydown listener.
+// You could remove this line if the topBar is also not being used.
 window.addFullPageIframe('/interior.html', 'interior');
-// createTopBar(); // Uncomment if you want the top bar
 
 let newWin: (Window & { resetAndRandomize?: () => void; }) | null;
+let interiorWindow: Window | null = null; // Variable for the interior pop-up
 
 async function moveCameraForward(h = 4, speed = 10 * 7, duration = 4000) {
     const camera = window.cameraController._camera;
     return new Promise<void>(resolve => {
         const start = performance.now();
-        camera.position.y = h; // keep height constant
+        camera.position.y = h;
         camera.updateProjectionMatrix();
         function step(now: number) {
             const elapsed = now - start;
-
             if (elapsed < duration) {
-                // Move camera forward in its local space
-                camera.translateZ(-speed * 0.016); // ~60fps step
+                camera.translateZ(-speed * 0.016);
                 requestAnimationFrame(step);
             } else {
                 resolve();
@@ -201,7 +196,7 @@ document.addEventListener("keydown", async function (e) {
         await moveCameraForward(12, 10 * 7, 4000);
         newWin = newWin || window.open(window.getParams('sroads') || window.getParams('slowroads') || "/sroads/index.html", "_blank");
         if (newWin) {
-            newWin.focus(); // shift focus to new window
+            newWin.focus();
             if (typeof newWin.resetAndRandomize === 'function') {
                 newWin.resetAndRandomize();
             }
@@ -209,29 +204,22 @@ document.addEventListener("keydown", async function (e) {
             alert("Popup blocked! Please allow popups for this site.");
         }
     } else if (e.key === "6") {
-        // --- START: MODIFIED LOGIC ---
-
-        // 1. Find and remove the existing iframe to ensure a clean slate
-        const oldIframe = document.getElementById('interior');
-        if (oldIframe) {
-            oldIframe.remove();
+        // Simplified logic: Always close any old window and open a fresh one.
+        if (interiorWindow && !interiorWindow.closed) {
+            interiorWindow.close();
         }
 
-        // 2. Call your function to add a brand new iframe
-        window.addFullPageIframe('/interior.html', 'interior');
-
-        // 3. Your function creates it hidden, so we get the new one and make it visible
-        const newIframe = document.getElementById('interior') as HTMLIFrameElement;
-        if (newIframe) {
-            newIframe.style.visibility = 'visible';
-            newIframe.focus(); // Set focus to the new iframe
+        interiorWindow = window.open('/interior.html', 'interiorView');
+        if (interiorWindow) {
+            interiorWindow.focus();
+        } else {
+            alert("Popup blocked! Please allow popups for this site to view the interior.");
         }
-        // --- END: MODIFIED LOGIC ---
-
     } else if (e.key === "7") {
-        const iframe = document.getElementById('interior');
-        if (iframe) {
-            iframe.style.visibility = 'hidden';
+        // '7' simply closes the window if it's open.
+        if (interiorWindow && !interiorWindow.closed) {
+            interiorWindow.close();
+            interiorWindow = null;
         }
     }
 });
@@ -241,9 +229,7 @@ function setupAudio(src: string) {
     const audio = new Audio(src);
     audio.loop = true;
 
-    // try autoplay instantly
     audio.play().catch(() => {
-        // if blocked, wait for first click/tap
         const startOnClick = () => {
             audio.play();
             document.removeEventListener("click", startOnClick);
@@ -251,7 +237,6 @@ function setupAudio(src: string) {
         document.addEventListener("click", startOnClick, { once: true });
     });
 
-    // pause/resume when tab visibility changes
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             audio.pause();
@@ -263,5 +248,4 @@ function setupAudio(src: string) {
     return audio;
 }
 
-// usage
 const bgm = setupAudio("/city.mp3");
