@@ -354,31 +354,46 @@ document.addEventListener("keydown", async function (e) {
             localStorage.setItem((new Date()).toISOString(), reply || '');
         });
 
-    } else if (e.key === "p") {
+    } else if (e.key === "o") {
         const response = await fetch("http://localhost:11434/v1/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "smollm:135m", //"phi3:mini",
+                model: "phi3:mini", // "smollm:135m", //"phi3:mini",
                 messages: [{ role: "user", content: window.prompt('enter prompt') }],
+                max_tokens: 150
             })
         });
 
         const data = await response.json();
         console.log("✨", data.choices[0].message.content);
         alert(data.choices[0].message.content);
-    } else if (e.key === "o") {
+    } else if (e.key === "p") {
         const response = await fetch("http://localhost:11434/v1/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: "smollm:135m", //"phi3:mini",
+                model: "smollm:360m", //"phi3:mini",
                 messages: [{
-                    role: "user", content:
-                        'generate a short and playful description of '
-                        + window.prompt('enter prompt')
+                    role: "user", content: window.prompt('enter prompt')
                 }],
-                max_tokens: 256
+                max_tokens: 150
+            })
+        });
+
+        const data = await response.json();
+        console.log("✨", data.choices[0].message.content);
+        alert(data.choices[0].message.content);
+    } else if (e.key === "i") {
+        const response = await fetch("http://localhost:11434/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "smollm:360m", //"phi3:mini",
+                messages: [{
+                    role: "user", content: window.prompt('enter prompt')
+                }],
+                // max_tokens: 150
             })
         });
 
