@@ -32,7 +32,7 @@
             0.1,
             1000
         );
-        camera.position.set(5, -42+10, 15);
+        camera.position.set(5, -42 + 10, 15);
         // camera.position.set(0, 2, 5);
         // const camera = new THREE.OrthographicCamera(
         //     cameraWidth / -2,
@@ -224,7 +224,7 @@
                     45
                 ];
                 var z = -22.5;
-
+                // working stable
                 for (let i = 0; i < numLights; i++) {
                     const fairyLight = new THREE.Group();
 
@@ -720,7 +720,7 @@
             scene.add(ceiling);
 
         }
-        scene.scale.set(2, 2, 2); 
+        scene.scale.set(2, 2, 2);
         addEnclosingWalls(room);
         addCelling();
         document.addEventListener("keydown", async function (e) {
