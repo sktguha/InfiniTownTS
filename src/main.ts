@@ -19,11 +19,11 @@ async function askGemini(prompt: string, model = "gemini-1.5-flash") {
     }
 }
 
-// Example usage
-(async () => {
-    const reply = await askGemini("Write a short motivational quote.");
-    console.log("Gemini says:", reply);
-})();
+// // Example usage
+// (async () => {
+//     const reply = await askGemini("Write a short motivational quote.");
+//     console.log("Gemini says:", reply);
+// })();
 
 // 初始化场景
 const container = document.getElementById('app') as HTMLElement;
@@ -48,16 +48,18 @@ setupUI({
 // 设置FPS计数器
 setupFPSCounter();
 
-setTimeout(() => {
-    try {
-        window.camera.setPosition(new window.THREE.Vector3(
-            -50.77595575780843,
-            1.9999999999982334,
-            22.465322255919943
-        ));
-        window.camera.getCamera().rotation.x = -0.03568420969271251;
-    } catch (e) { }
-}, 3000);
+window.onload = () => {
+    setTimeout(() => {
+        try {
+            window.camera.setPosition(new window.THREE.Vector3(
+                -50.77595575780843,
+                1.9999999999982334,
+                22.465322255919943
+            ));
+            window.camera.getCamera().rotation.x = -0.03568420969271251;
+        } catch (e) { }
+    }, 3000);
+}
 // 双击进入全屏并自动聚焦
 container.addEventListener("dblclick", () => {
     if (!document.fullscreenElement) {
@@ -224,15 +226,73 @@ document.addEventListener("keydown", async function (e) {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5") {
         const place = window.prompt('name', 'pizza place');
-        askGemini(
-            "write a beautiful warm piece quaint small description of a " + place
-            +
-            " place. It is basically for a video game. make it cute and nice."
-            + " basically its some establishment").
-            then((reply) => {
-                window.alert(reply);
-                localStorage.setItem(place!, reply || '');
+        function dropBanner(text) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = '60px Arial';
+            ctx.fillStyle = 'yellow';
+            ctx.fillText(text, 10, 60);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+
+            sprite.scale.set(5, 2.5, 1);
+
+            // place at camera position
+            sprite.position.copy(camera.position);
+
+            // push it a bit forward
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            sprite.position.add(dir.multiplyScalar(5));
+
+            scene.add(sprite);
+        }
+
+        // askGemini(
+        //     "write a beautiful warm piece quaint small description of a " + place
+        //     +
+        //     " place. It is basically for a video game. make it cute and nice."
+        //     + " basically its some establishment").
+        //     then((reply) => {
+        //         // window.alert(reply);
+        //         dropBanner(reply);
+        //         localStorage.setItem(place! + Date.now(), reply || '');
+        //     });
+        async function generatePlaceDescription() {
+            const place = window.prompt("What kind of place should I describe? (e.g. pizza place, tea shop, bakery)");
+
+            if (!place) {
+                console.log("No input given.");
+                return;
+            }
+
+            const prompt = `
+          You are a friendly storyteller for a cozy video game.
+          Describe a **${place}** in a warm, cute, and whimsical way.
+          Keep it short (3–5 sentences), playful, and inviting.
+          `;
+
+            const response = await fetch("http://localhost:11434/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "gemma3:1b",
+                    messages: [{ role: "user", content: prompt }]
+                })
             });
+
+            const data = await response.json();
+            console.log("✨", data.choices[0].message.content);
+            return data.choices[0].message.content;
+        }
+
+        // Run it:
+        generatePlaceDescription().then((reply) => {
+            window.alert(reply)
+        });
+
     }
 });
 
