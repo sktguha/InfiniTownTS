@@ -324,7 +324,7 @@ document.addEventListener("keydown", async function (e) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "phi3:mini",
+                    model: "smollm:360m", //"phi3:mini",
                     messages: [{ role: "user", content: prompt }]
                 })
             });
