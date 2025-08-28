@@ -1,9 +1,11 @@
+// @ts-nocheck
 import { SceneManager } from './core/SceneManager';
 import { CubeObject } from './objects/CubeObject';
 import { setupUI } from './ui/Controls';
 import { setupFPSCounter } from './utils/fpsCounter';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from './api';
+import * as desc_map from './desc.ts';
 
 // 🔑 Get your API key from https://aistudio.google.com/
 // (Don't hardcode in production; use env var instead)
@@ -225,7 +227,7 @@ document.addEventListener("keydown", async function (e) {
     } else if (e.key === "7") {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5") {
-        function dropBanner(text) {
+        function dropBanner(text, position) {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
@@ -272,7 +274,7 @@ document.addEventListener("keydown", async function (e) {
             sprite.scale.set(10, 5, 1);
 
             // place in front of camera
-            sprite.position.copy(camera.position);
+            sprite.position.copy(position);
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             sprite.position.add(dir.multiplyScalar(5));
@@ -292,14 +294,21 @@ document.addEventListener("keydown", async function (e) {
         //         dropBanner(reply);
         //         localStorage.setItem(place! + Date.now(), reply || '');
         //     });
+        window.desc_map = desc_map;
         async function generatePlaceDescription() {
-            const place = window.prompt("What kind of place should I describe? (e.g. pizza place, tea shop, bakery)");
-
+            
+            const keys = desc_map;
+            const place = window.prompt(
+                "What kind of place should I describe? (e.g. 1. pizza, 2.tea shop, bakery)");
+            
             if (!place) {
                 console.log("No input given.");
                 return;
             }
-
+            const desc = ['pizza', '']
+            if(!isNaN(place*1)){
+                return window[desc[place]];
+            }
             const prompt = `
           You are a friendly storyteller for a cozy video game.
           Describe a **${place}** in a warm, cute, and whimsical way.
@@ -310,7 +319,7 @@ document.addEventListener("keydown", async function (e) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "gemma3:1b",
+                    model: "phi3:mini",
                     messages: [{ role: "user", content: prompt }]
                 })
             });
@@ -321,9 +330,11 @@ document.addEventListener("keydown", async function (e) {
         }
 
         // Run it:
+        const camera = window.cameraController._camera;
+        const position = camera.position;
         generatePlaceDescription().then((reply) => {
             // window.alert(reply)
-            dropBanner(reply || '');
+            dropBanner(reply || '', position);
         });
 
     }
