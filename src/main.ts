@@ -348,6 +348,19 @@ document.addEventListener("keydown", async function (e) {
             localStorage.setItem((new Date()).toISOString(), reply || '');
         });
 
+    } else if (e.key === "p") {
+        const response = await fetch("http://localhost:11434/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "smollm:135m", //"phi3:mini",
+                messages: [{ role: "user", content: window.prompt('enter prompt') }]
+            })
+        });
+
+        const data = await response.json();
+        console.log("✨", data.choices[0].message.content);
+        alert(data.choices[0].message.content);
     }
 });
 
@@ -379,6 +392,6 @@ function setupAudio(src) {
 
 // usage
 // https://www.youtube.com/watch?v=ukbZkjnbPCQ&t=58s
-if (getParams('nobgm')!=='true') {
+if (getParams('nobgm') !== 'true') {
     const bgm = setupAudio("/city.mp3");
 }
