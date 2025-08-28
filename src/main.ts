@@ -303,7 +303,7 @@ document.addEventListener("keydown", async function (e) {
             const prompt = `
           You are a friendly storyteller for a cozy video game.
           Describe a **${place}** in a warm, cute, and whimsical way.
-          Keep it short (3–5 sentences), playful, and inviting.
+          Keep it short (3 sentences), playful, and inviting.
           `;
 
             const response = await fetch("http://localhost:11434/v1/chat/completions", {
