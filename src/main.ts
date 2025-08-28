@@ -340,6 +340,7 @@ document.addEventListener("keydown", async function (e) {
         generatePlaceDescription().then((reply) => {
             // window.alert(reply)
             dropBanner(reply || '', position);
+            localStorage.setItem((new Date()).toISOString(), reply || '');
         });
 
     }
