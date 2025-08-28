@@ -310,25 +310,25 @@ document.addEventListener("keydown", async function (e) {
             const getRandomElArr = arr => arr[Math.floor(Math.random() * arr.length)];
             if (!isNaN(place * 1)) {
                 const allDesc = desc_map[keys[place * 1 - 1]];
-                return "&"+getRandomElArr(
+                return "&" + getRandomElArr(
                     allDesc
                 );
             }
-            /*
-                    const prompt = `
+            // /*
+            const prompt = `
               You are a friendly storyteller for a cozy video game.
               Describe a **${place}** in a warm, cute, and whimsical way.
               Keep it short (3 sentences), playful, and inviting.
               `;
-            */
-            const prompt = `generate a fun playful description for ${place}`;
+            // */
+            // const prompt = `generate a fun playful description for ${place}`;
             const response = await fetch("http://localhost:11434/v1/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "smollm:360m", //"phi3:mini",
+                    model: "smollm:360m",//"phi3:mini", ,
                     messages: [{ role: "user", content: prompt }],
-                    max_tokens: 80 //256
+                    max_tokens: 120 //256
                 })
             });
 
@@ -342,7 +342,7 @@ document.addEventListener("keydown", async function (e) {
         const position = camera.position;
         generatePlaceDescription().then((replyArg) => {
             // window.alert(reply)
-            if(replyArg.startsWith("&")){
+            if (replyArg.startsWith("&")) {
                 replyArg = replyArg.slice(1);
                 dropBanner(replyArg, position);
                 return;
@@ -373,9 +373,11 @@ document.addEventListener("keydown", async function (e) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "smollm:135m", //"phi3:mini",
-                messages: [{ role: "user", content: 
-                'generate a short and playful description of ' 
-                + window.prompt('enter prompt') }],
+                messages: [{
+                    role: "user", content:
+                        'generate a short and playful description of '
+                        + window.prompt('enter prompt')
+                }],
                 max_tokens: 256
             })
         });
