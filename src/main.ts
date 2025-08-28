@@ -226,64 +226,61 @@ document.addEventListener("keydown", async function (e) {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5") {
         function dropBanner(text) {
-            // setup canvas
             const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
             const ctx = canvas.getContext('2d');
-            const fontSize = 40;
-            ctx.font = `${fontSize}px Arial`;
+
+            ctx.font = '40px Arial';
             ctx.fillStyle = 'yellow';
+            ctx.textBaseline = 'top';
 
-            // word wrap
-            const maxWidth = 800; // pixels
-            const lineHeight = fontSize * 1.4;
-            const words = text.split(" ");
-            const lines = [];
-            let line = "";
+            const maxWidth = canvas.width - 40; // padding
+            const lineHeight = 50;
 
-            for (let i = 0; i < words.length; i++) {
-                const testLine = line + words[i] + " ";
-                const { width: testWidth } = ctx.measureText(testLine);
-                if (testWidth > maxWidth && i > 0) {
-                    lines.push(line);
-                    line = words[i] + " ";
-                } else {
-                    line = testLine;
+            function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+                const words = text.split(' ');
+                let line = '';
+                let lines = [];
+
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    const metrics = ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+                    if (testWidth > maxWidth && n > 0) {
+                        lines.push(line);
+                        line = words[n] + ' ';
+                    } else {
+                        line = testLine;
+                    }
+                }
+                lines.push(line);
+
+                for (let k = 0; k < lines.length; k++) {
+                    ctx.fillText(lines[k], x, y + k * lineHeight);
                 }
             }
-            lines.push(line);
 
-            // resize canvas to fit lines
-            canvas.width = maxWidth + 40;
-            canvas.height = lines.length * lineHeight + 40;
+            wrapText(ctx, text, 20, 20, maxWidth, lineHeight);
 
-            // need to reset font after resize
-            ctx.font = `${fontSize}px Arial`;
-            ctx.fillStyle = 'yellow';
-
-            // draw text
-            lines.forEach((l, i) => {
-                ctx.fillText(l, 20, (i + 1) * lineHeight);
-            });
-
-            // create texture
             const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(material);
 
-            // scale sprite proportional to canvas
-            const aspect = canvas.width / canvas.height;
-            sprite.scale.set(8 * aspect, 8, 1);
-
-            // position in front of camera
             const camera = window.cameraController._camera;
-            sprite.position.copy(camera.position);
+            sprite.scale.set(10, 5, 1);
 
+            // place in front of camera
+            sprite.position.copy(camera.position);
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             sprite.position.add(dir.multiplyScalar(5));
 
-            window.sceneManager.scene.add(sprite);
+            const scene = window.sceneManager.scene;
+            scene.add(sprite);
         }
+
 
         // askGemini(
         //     "write a beautiful warm piece quaint small description of a " + place
