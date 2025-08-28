@@ -878,5 +878,10 @@ const stadium_more = [
     "Welcome to The Starfish-Gymnastics, a very slow and very flexible display of acrobatics! The starfish bend and curl into amazing, beautiful shapes. A peaceful, mesmerizing, and surprisingly graceful performance."]
 
 pizza = [...pizza, ...pizza_more];
+gift_shop = [...gift_shop, ...gift_shop_more];
+mall = [...mall, ...mall_more];
+stadium = [...stadium, ...stadium_more];
+// coffee_shop = [...coffee_shop, ...coffee_shop_more];
+
 
 export { pizza, gift_shop, mall, stadium, coffee_shop }

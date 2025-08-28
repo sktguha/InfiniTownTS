@@ -296,18 +296,23 @@ document.addEventListener("keydown", async function (e) {
         //     });
         window.desc_map = desc_map;
         async function generatePlaceDescription() {
-            
-            const keys = desc_map;
+
+            const keys = Object.keys(desc_map);
             const place = window.prompt(
-                "What kind of place should I describe? (e.g. 1. pizza, 2.tea shop, bakery)");
-            
+                "What kind of place should I describe?" + keys
+                    .map((item, index) => `${index + 1}. ${item}`)
+                    .join("\n"));
+
             if (!place) {
                 console.log("No input given.");
                 return;
             }
-            const desc = ['pizza', '']
-            if(!isNaN(place*1)){
-                return window[desc[place]];
+            const getRandomElArr = arr => arr[Math.floor(Math.random() * arr.length)];
+            if (!isNaN(place * 1)) {
+                const allDesc = desc_map[keys[place * 1 - 1]];
+                return getRandomElArr(
+                    allDesc
+                );
             }
             const prompt = `
           You are a friendly storyteller for a cozy video game.
