@@ -226,27 +226,63 @@ document.addEventListener("keydown", async function (e) {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5") {
         function dropBanner(text) {
+            // setup canvas
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            ctx.font = '60px Arial';
+            const fontSize = 40;
+            ctx.font = `${fontSize}px Arial`;
             ctx.fillStyle = 'yellow';
-            ctx.fillText(text, 10, 60);
 
+            // word wrap
+            const maxWidth = 800; // pixels
+            const lineHeight = fontSize * 1.4;
+            const words = text.split(" ");
+            const lines = [];
+            let line = "";
+
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + " ";
+                const { width: testWidth } = ctx.measureText(testLine);
+                if (testWidth > maxWidth && i > 0) {
+                    lines.push(line);
+                    line = words[i] + " ";
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+
+            // resize canvas to fit lines
+            canvas.width = maxWidth + 40;
+            canvas.height = lines.length * lineHeight + 40;
+
+            // need to reset font after resize
+            ctx.font = `${fontSize}px Arial`;
+            ctx.fillStyle = 'yellow';
+
+            // draw text
+            lines.forEach((l, i) => {
+                ctx.fillText(l, 20, (i + 1) * lineHeight);
+            });
+
+            // create texture
             const texture = new THREE.CanvasTexture(canvas);
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(material);
-            const camera = window.cameraController._camera;
-            sprite.scale.set(5, 2.5, 1);
 
-            // place at camera position
+            // scale sprite proportional to canvas
+            const aspect = canvas.width / canvas.height;
+            sprite.scale.set(8 * aspect, 8, 1);
+
+            // position in front of camera
+            const camera = window.cameraController._camera;
             sprite.position.copy(camera.position);
 
-            // push it a bit forward
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             sprite.position.add(dir.multiplyScalar(5));
-            const scene = window.sceneManager.scene;
-            scene.add(sprite);
+
+            window.sceneManager.scene.add(sprite);
         }
 
         // askGemini(
