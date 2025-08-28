@@ -299,7 +299,7 @@ document.addEventListener("keydown", async function (e) {
 
             const keys = Object.keys(desc_map);
             const place = window.prompt(
-                "What kind of place should I describe?" + keys
+                "What kind of place should I describe?\n" + keys
                     .map((item, index) => `${index + 1}. ${item}`)
                     .join("\n"));
 
