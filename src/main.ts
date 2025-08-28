@@ -310,7 +310,7 @@ document.addEventListener("keydown", async function (e) {
             const getRandomElArr = arr => arr[Math.floor(Math.random() * arr.length)];
             if (!isNaN(place * 1)) {
                 const allDesc = desc_map[keys[place * 1 - 1]];
-                return getRandomElArr(
+                return "&"+getRandomElArr(
                     allDesc
                 );
             }
@@ -342,6 +342,11 @@ document.addEventListener("keydown", async function (e) {
         const position = camera.position;
         generatePlaceDescription().then((replyArg) => {
             // window.alert(reply)
+            if(replyArg.startsWith("&")){
+                replyArg = replyArg.slice(1);
+                dropBanner(replyArg, position);
+                return;
+            }
             let [_, ...reply] = replyArg.split("\n");
             reply = reply.join('\n');
             console.log("🏷️", reply);
