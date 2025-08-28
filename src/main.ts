@@ -209,6 +209,61 @@ async function moveCameraForward(h = 4, speed = 10 * 7, duration = 4000) {
 
 // usage:
 // console.log("done moving");
+window.dropBanner = function dropBanner(text, position = window.cameraController._camera.position) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    ctx.font = '40px Arial';
+    ctx.fillStyle = 'yellow';
+    ctx.textBaseline = 'top';
+
+    const maxWidth = canvas.width - 40; // padding
+    const lineHeight = 50;
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let lines = [];
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                lines.push(line);
+                line = words[n] + ' ';
+            } else {
+                line = testLine;
+            }
+        }
+        lines.push(line);
+
+        for (let k = 0; k < lines.length; k++) {
+            ctx.fillText(lines[k], x, y + k * lineHeight);
+        }
+    }
+
+    wrapText(ctx, text, 20, 20, maxWidth, lineHeight);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+
+    const camera = window.cameraController._camera;
+    sprite.scale.set(10, 5, 1);
+
+    // place in front of camera
+    sprite.position.copy(position);
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    sprite.position.add(dir.multiplyScalar(5));
+
+    const scene = window.sceneManager.scene;
+    scene.add(sprite);
+}
 
 document.addEventListener("keydown", async function (e) {
     // Check if key "9" is pressed (keyCode 57 or e.key === "9")
@@ -227,61 +282,7 @@ document.addEventListener("keydown", async function (e) {
     } else if (e.key === "7") {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5" || e.key === "0") {
-        function dropBanner(text, position) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024;
-            canvas.height = 512;
-            const ctx = canvas.getContext('2d');
 
-            ctx.font = '40px Arial';
-            ctx.fillStyle = 'yellow';
-            ctx.textBaseline = 'top';
-
-            const maxWidth = canvas.width - 40; // padding
-            const lineHeight = 50;
-
-            function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-                const words = text.split(' ');
-                let line = '';
-                let lines = [];
-
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ' ';
-                    const metrics = ctx.measureText(testLine);
-                    const testWidth = metrics.width;
-                    if (testWidth > maxWidth && n > 0) {
-                        lines.push(line);
-                        line = words[n] + ' ';
-                    } else {
-                        line = testLine;
-                    }
-                }
-                lines.push(line);
-
-                for (let k = 0; k < lines.length; k++) {
-                    ctx.fillText(lines[k], x, y + k * lineHeight);
-                }
-            }
-
-            wrapText(ctx, text, 20, 20, maxWidth, lineHeight);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.needsUpdate = true;
-            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-            const sprite = new THREE.Sprite(material);
-
-            const camera = window.cameraController._camera;
-            sprite.scale.set(10, 5, 1);
-
-            // place in front of camera
-            sprite.position.copy(position);
-            const dir = new THREE.Vector3();
-            camera.getWorldDirection(dir);
-            sprite.position.add(dir.multiplyScalar(5));
-
-            const scene = window.sceneManager.scene;
-            scene.add(sprite);
-        }
 
 
         // askGemini(
@@ -367,7 +368,7 @@ document.addEventListener("keydown", async function (e) {
 
         const data = await response.json();
         console.log("✨", data.choices[0].message.content);
-        alert(data.choices[0].message.content);
+        window.dropBanner(data.choices[0].message.content);
     } else if (e.key === "p") {
         const response = await fetch("http://localhost:11434/v1/chat/completions", {
             method: "POST",
@@ -383,7 +384,7 @@ document.addEventListener("keydown", async function (e) {
 
         const data = await response.json();
         console.log("✨", data.choices[0].message.content);
-        alert(data.choices[0].message.content);
+        window.dropBanner(data.choices[0].message.content);
     } else if (e.key === "i") {
         const response = await fetch("http://localhost:11434/v1/chat/completions", {
             method: "POST",
@@ -399,7 +400,7 @@ document.addEventListener("keydown", async function (e) {
 
         const data = await response.json();
         console.log("✨", data.choices[0].message.content);
-        alert(data.choices[0].message.content);
+        window.dropBanner(data.choices[0].message.content);
     }
 });
 
