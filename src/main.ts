@@ -10,19 +10,19 @@ import { GEMINI_API_KEY } from './api';
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 async function askGemini(prompt: string, model = "gemini-1.5-flash") {
-  try {
-    const modelClient = genAI.getGenerativeModel({ model });
-    const result = await modelClient.generateContent(prompt);
-    return result.response.text();
-  } catch (err) {
-    console.error("Error calling Gemini API:", err);
-  }
+    try {
+        const modelClient = genAI.getGenerativeModel({ model });
+        const result = await modelClient.generateContent(prompt);
+        return result.response.text();
+    } catch (err) {
+        console.error("Error calling Gemini API:", err);
+    }
 }
 
 // Example usage
 (async () => {
-  const reply = await askGemini("Write a short motivational quote.");
-  console.log("Gemini says:", reply);
+    const reply = await askGemini("Write a short motivational quote.");
+    console.log("Gemini says:", reply);
 })();
 
 // 初始化场景
@@ -222,6 +222,17 @@ document.addEventListener("keydown", async function (e) {
         iframe.focus();
     } else if (e.key === "7") {
         iframe.style.visibility = 'hidden'
+    } else if (e.key === "5") {
+        const place = window.prompt('name', 'pizza place');
+        askGemini(
+            "write a beautiful warm piece quaint small description of a " + place
+            +
+            " place. It is basically for a video game. make it cute and nice."
+            + " basically its some establishment").
+            then((reply) => {
+                window.alert(reply);
+                localStorage.setItem(place!, reply || '');
+            });
     }
 });
 
