@@ -225,7 +225,6 @@ document.addEventListener("keydown", async function (e) {
     } else if (e.key === "7") {
         iframe.style.visibility = 'hidden'
     } else if (e.key === "5") {
-        const place = window.prompt('name', 'pizza place');
         function dropBanner(text) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -236,7 +235,7 @@ document.addEventListener("keydown", async function (e) {
             const texture = new THREE.CanvasTexture(canvas);
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
             const sprite = new THREE.Sprite(material);
-
+            const camera = window.cameraController._camera;
             sprite.scale.set(5, 2.5, 1);
 
             // place at camera position
@@ -246,7 +245,7 @@ document.addEventListener("keydown", async function (e) {
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             sprite.position.add(dir.multiplyScalar(5));
-
+            const scene = window.sceneManager.scene;
             scene.add(sprite);
         }
 
@@ -290,7 +289,8 @@ document.addEventListener("keydown", async function (e) {
 
         // Run it:
         generatePlaceDescription().then((reply) => {
-            window.alert(reply)
+            // window.alert(reply)
+            dropBanner(reply || '');
         });
 
     }
