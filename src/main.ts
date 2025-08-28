@@ -328,7 +328,7 @@ document.addEventListener("keydown", async function (e) {
                 body: JSON.stringify({
                     model: "smollm:360m", //"phi3:mini",
                     messages: [{ role: "user", content: prompt }],
-                    max_tokens: 256
+                    max_tokens: 80 //256
                 })
             });
 
