@@ -327,7 +327,8 @@ document.addEventListener("keydown", async function (e) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "smollm:360m", //"phi3:mini",
-                    messages: [{ role: "user", content: prompt }]
+                    messages: [{ role: "user", content: prompt }],
+                    max_tokens: 256
                 })
             });
 
@@ -354,7 +355,23 @@ document.addEventListener("keydown", async function (e) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "smollm:135m", //"phi3:mini",
-                messages: [{ role: "user", content: window.prompt('enter prompt') }]
+                messages: [{ role: "user", content: window.prompt('enter prompt') }],
+            })
+        });
+
+        const data = await response.json();
+        console.log("✨", data.choices[0].message.content);
+        alert(data.choices[0].message.content);
+    } else if (e.key === "o") {
+        const response = await fetch("http://localhost:11434/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "smollm:135m", //"phi3:mini",
+                messages: [{ role: "user", content: 
+                'generate a short and playful description of ' 
+                + window.prompt('enter prompt') }],
+                max_tokens: 256
             })
         });
 
